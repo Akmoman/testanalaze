@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تحليل نتائج الاختبارات</title>
+    
+    <!-- تحميل مكتبة Tailwind CSS للتصميم -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 1. تحميل React و ReactDOM (نسخ مستقرة) -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- 2. تحميل Prop-types (مهم لعمل Recharts في المتصفح) -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    
+    <!-- 3. تحميل Recharts (نسخة محددة تعمل بثبات) -->
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    
+    <!-- 4. تحميل Babel لترجمة كود React -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- تنسيقات الطباعة -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+        
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* تحسينات شريط التمرير */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        @media print {
+            @page { margin: 0.5cm; size: A4; }
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background: white; 
+            }
+            .no-print { display: none !important; }
+            .print-break-avoid { break-inside: avoid; page-break-inside: avoid; }
+            header, button, input[type="text"], select { display: none !important; }
+            h1 { display: block !important; }
+            .no-print-container { display: none !important; }
+            /* إجبار الرسوم البيانية على الظهور بحجم مناسب */
+            .recharts-responsive-container { height: 350px !important; width: 100% !important; }
+            .print-full-width { width: 100% !important; max-width: none !important; }
+            .shadow-sm, .shadow-lg { box-shadow: none !important; }
+            .bg-slate-50 { background-color: #f8fafc !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+        
+        // التأكد من تحميل Recharts
+        const RechartsLib = window.Recharts || {};
+        const { 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, ReferenceLine 
+        } = RechartsLib;
+
+        // --- أيقونات SVG (بديل لـ Lucide-React لتعمل بدون بناء) ---
+        const Icons = {
+            Table: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>,
+            RefreshCw: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            Trash2: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
+            Calculator: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
+            Printer: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>,
+            TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+            Activity: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            Award: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>,
+            Sigma: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 7V4H6l6 8-6 8h12v-3"/></svg>,
+            AlertTriangle: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
+            CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>,
+            ArrowUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>,
+            PenLine: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        };
+
+        // --- إعدادات النظام ---
+        const STUDENTS_COUNT = 35;
+        const QUESTIONS_COUNT = 60; 
+
+        // --- دالة حساب المستوى ---
+        const getGradeLevel = (score, totalScore) => {
+            if (totalScore === 0) return { label: '-', color: 'bg-slate-100 text-slate-500', chartColor: '#cbd5e1' };
+            
+            const percentage = (score / totalScore) * 100;
+            if (percentage >= 87.5) return { label: 'ممتاز', color: 'bg-emerald-100 text-emerald-700', chartColor: '#10B981' };
+            if (percentage >= 75) return { label: 'جيد جداً', color: 'bg-blue-100 text-blue-700', chartColor: '#3B82F6' };
+            if (percentage >= 62.5) return { label: 'جيد', color: 'bg-indigo-100 text-indigo-700', chartColor: '#6366F1' };
+            if (percentage >= 50) return { label: 'مقبول', color: 'bg-yellow-100 text-yellow-700', chartColor: '#F59E0B' };
+            return { label: 'راسب', color: 'bg-red-100 text-red-700', chartColor: '#EF4444' };
+        };
+
+        // --- دوال إحصائية مساعدة ---
+        const calculateMedian = (values) => {
+            if (values.length === 0) return 0;
+            const sorted = [...values].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 !== 0 ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2);
+        };
+
+        const calculateMode = (values) => {
+            if (values.length === 0) return 'لا يوجد';
+            const frequency = {};
+            let maxFreq = 0;
+            let modes = [];
+            values.forEach(v => {
+                frequency[v] = (frequency[v] || 0) + 1;
+                if (frequency[v] > maxFreq) maxFreq = frequency[v];
+            });
+            if (maxFreq === 1) return 'لا يوجد';
+            for (const key in frequency) {
+                if (frequency[key] === maxFreq) modes.push(key);
+            }
+            return modes.length > 3 ? 'متعدد' : modes.join(', ');
+        };
+
+        const calculateStdDev = (values, mean) => {
+            if (values.length === 0) return 0;
+            const squareDiffs = values.map(value => Math.pow(value - mean, 2));
+            const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+            return Math.sqrt(avgSquareDiff).toFixed(2);
+        };
+
+        // --- توليد بيانات فارغة ---
+        const initialData = Array.from({ length: STUDENTS_COUNT }, (_, i) => {
+            const student = { id: i + 1, name: `طالب ${i + 1}` };
+            for (let q = 1; q <= QUESTIONS_COUNT; q++) {
+                student[`q${q}`] = 0;
+            }
+            return student;
+        });
+
+        // توزيع افتراضي للدرجات
+        const initialMaxScores = Array(QUESTIONS_COUNT).fill(1); 
+
+        // --- المكونات ---
+
+        const StatCard = ({ title, value, subtext, color, icon: Icon }) => (
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print-break-avoid">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <p className="text-sm font-medium text-slate-500">{title}</p>
+                        <h3 className="text-2xl font-bold text-slate-800 mt-1">{value}</h3>
+                    </div>
+                    <div className={`p-2 rounded-lg ${color} text-white print:text-black print:bg-transparent`}>
+                        <Icon />
+                    </div>
+                </div>
+                {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
+            </div>
+        );
+
+        const DataEntryView = ({ data, maxScores, onUpdateData, onUpdateMaxScore, onRandomize, onReset, totalScore, examTitle, setExamTitle }) => {
+            
+            const handleScoreChange = (studentId, questionIndex, value) => {
+                const qKey = `q${questionIndex + 1}`;
+                const maxScore = maxScores[questionIndex];
+                if (maxScore === 0) return;
+
+                if (maxScore === 1) {
+                    if (value === '') {
+                        onUpdateData(studentId, qKey, 0); 
+                        return;
+                    }
+                    if (value !== '0' && value !== '1') return;
+                    onUpdateData(studentId, qKey, parseInt(value));
+                } else {
+                    const parsedVal = parseFloat(value);
+                    const newValue = isNaN(parsedVal) ? 0 : Math.min(Math.max(0, parsedVal), maxScore);
+                    onUpdateData(studentId, qKey, newValue);
+                }
+            };
+
+            const handleMaxScoreChange = (index, value) => {
+                const newValue = Math.max(0, parseFloat(value) || 0);
+                onUpdateMaxScore(index, newValue);
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-220px)] animate-fade-in no-print-container">
+                    <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50 rounded-t-xl gap-4 no-print">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 group">
+                                <input 
+                                    type="text" 
+                                    value={examTitle}
+                                    onChange={(e) => setExamTitle(e.target.value)}
+                                    className="font-bold text-slate-800 text-lg border-b border-dashed border-transparent hover:border-blue-400 focus:border-blue-600 focus:outline-none bg-transparent transition-colors w-full md:w-auto"
+                                    placeholder="انقر هنا لكتابة اسم الاختبار أو الصف..."
+                                />
+                                <Icons.PenLine className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                                <Icons.Table />
+                                جدول رصد الدرجات (مفردات) - قم بتعديل الدرجات العظمى في الصف الأول.
+                            </p>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg text-sm font-bold border border-blue-200 whitespace-nowrap">
+                                المجموع الحالي: {totalScore}
+                            </div>
+                            
+                            <button 
+                                onClick={onReset}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 rounded-lg transition-colors whitespace-nowrap"
+                                title="مسح جميع درجات الطلاب"
+                            >
+                                <Icons.Trash2 />
+                                تصفير الجدول
+                            </button>
+
+                            <button 
+                                onClick={onRandomize}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                                <Icons.RefreshCw />
+                                بيانات تجريبية
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-auto">
+                        <table className="w-full text-center border-collapse">
+                            <thead className="bg-slate-100 sticky top-0 z-20 shadow-sm">
+                                <tr>
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-slate-600 border-b border-r bg-slate-100 min-w-[50px] z-20 sticky right-0">#</th>
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-slate-600 border-b min-w-[140px] text-right bg-slate-100 z-20 sticky right-[50px]">اسم الطالب</th>
+                                    {Array.from({ length: QUESTIONS_COUNT }, (_, i) => (
+                                        <th key={i} className={`p-2 text-xs font-bold border-b border-l min-w-[60px] ${maxScores[i] === 0 ? 'bg-slate-200 text-slate-400' : 'bg-blue-50/50 text-blue-700'}`}>
+                                            م{i + 1}
+                                        </th>
+                                    ))}
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-emerald-700 border-b min-w-[80px] bg-emerald-50">المجموع</th>
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-purple-700 border-b min-w-[90px] bg-purple-50">المستوى</th>
+                                </tr>
+                                <tr>
+                                    {maxScores.map((score, i) => (
+                                        <th key={i} className={`p-1 border-b border-l ${score === 0 ? 'bg-slate-200' : 'bg-blue-100/50'}`}>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className={`text-[10px] ${score === 0 ? 'text-slate-400' : 'text-slate-500'}`}>من</span>
+                                                <input 
+                                                    type="number" 
+                                                    min="0"
+                                                    value={score}
+                                                    onChange={(e) => handleMaxScoreChange(i, e.target.value)}
+                                                    className={`w-10 text-center text-xs font-bold rounded px-1 py-0.5 outline-none border ${score === 0 ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-white text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-400'}`}
+                                                />
+                                            </div>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {data.map((student) => {
+                                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => student[`q${i + 1}`]).reduce((a, b) => a + b, 0);
+                                    const roundedTotal = Math.round(total * 100) / 100;
+                                    const level = getGradeLevel(roundedTotal, totalScore);
+
+                                    return (
+                                        <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                                            <td className="p-2 text-xs font-mono text-slate-400 border-l border-slate-100 bg-slate-50 sticky right-0 z-10">{student.id}</td>
+                                            <td className="p-2 text-sm font-medium text-slate-700 text-right border-l border-slate-100 bg-white sticky right-[50px] z-10">{student.name}</td>
+                                            {Array.from({ length: QUESTIONS_COUNT }, (_, i) => {
+                                                const isDisabled = maxScores[i] === 0;
+                                                return (
+                                                    <td key={i} className={`p-1 border-l border-slate-100 ${isDisabled ? 'bg-slate-50' : ''}`}>
+                                                        <input
+                                                            type="text"
+                                                            inputMode={maxScores[i] === 1 ? "numeric" : "decimal"}
+                                                            disabled={isDisabled}
+                                                            value={student[`q${i + 1}`] === 0 ? '' : student[`q${i + 1}`]}
+                                                            placeholder={isDisabled ? '-' : '0'}
+                                                            onChange={(e) => handleScoreChange(student.id, i, e.target.value)}
+                                                            className={`w-full text-center p-1 rounded outline-none text-sm font-bold transition-all ${
+                                                                isDisabled ? 'bg-transparent text-slate-300 cursor-not-allowed' :
+                                                                student[`q${i + 1}`] === maxScores[i] ? 'text-green-600 bg-green-50 focus:ring-2 focus:ring-green-400' :
+                                                                student[`q${i + 1}`] === 0 ? 'text-slate-300 focus:ring-2 focus:ring-blue-500' : 'text-slate-700 bg-blue-50/10 focus:ring-2 focus:ring-blue-500'
+                                                            }`}
+                                                        />
+                                                    </td>
+                                                );
+                                            })}
+                                            <td className={`p-2 font-bold bg-emerald-50/30 ${roundedTotal > totalScore ? 'text-red-600' : 'text-emerald-700'}`}>
+                                                {roundedTotal}
+                                            </td>
+                                            <td className="p-2 border-r border-slate-100">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${level.color}`}>
+                                                    {level.label}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        const AnalysisDashboard = ({ data, maxScores, totalScore, examTitle }) => {
+            const stats = useMemo(() => {
+                const studentTotals = data.map(s => {
+                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
+                    return {
+                        name: s.name,
+                        total: Math.round(total * 100) / 100,
+                        level: getGradeLevel(total, totalScore)
+                    };
+                });
+                
+                const allTotals = studentTotals.map(s => s.total);
+                const avgTotal = parseFloat((allTotals.reduce((a, b) => a + b, 0) / STUDENTS_COUNT).toFixed(2));
+                const maxScore = Math.max(...allTotals);
+                const minScore = Math.min(...allTotals);
+                const passScore = totalScore * 0.5;
+                const passCount = studentTotals.filter(s => s.total >= passScore).length;
+                const passRate = ((passCount / STUDENTS_COUNT) * 100).toFixed(1);
+
+                const median = calculateMedian(allTotals);
+                const mode = calculateMode(allTotals);
+                const stdDev = calculateStdDev(allTotals, avgTotal);
+
+                const questionsAnalysis = Array.from({ length: QUESTIONS_COUNT }, (_, i) => {
+                    const qKey = `q${i + 1}`;
+                    const qMaxScore = maxScores[i];
+                    
+                    if (qMaxScore === 0) {
+                        return {
+                            question: `م${i + 1}`,
+                            maxScore: 0,
+                            sum: 0,
+                            ease: 0,
+                            difficulty: 0,
+                            status: 'مستبعد'
+                        };
+                    }
+
+                    const scores = data.map(s => s[qKey]);
+                    const sum = scores.reduce((a, b) => a + b, 0);
+                    
+                    const easeIndex = sum / (STUDENTS_COUNT * qMaxScore);
+                    const diffIndex = 1 - easeIndex;
+                    
+                    let status = 'متوسط';
+                    if (easeIndex > 0.8) status = 'سهل جداً';
+                    else if (easeIndex > 0.6) status = 'سهل';
+                    else if (easeIndex < 0.25) status = 'صعب جداً';
+                    else if (easeIndex < 0.45) status = 'صعب';
+
+                    return {
+                        question: `م${i + 1}`,
+                        maxScore: qMaxScore,
+                        sum: Math.round(sum * 10) / 10,
+                        ease: parseFloat(easeIndex.toFixed(2)),
+                        difficulty: parseFloat(diffIndex.toFixed(2)),
+                        status
+                    };
+                });
+
+                const activeQuestions = questionsAnalysis.filter(q => q.status !== 'مستبعد');
+                const weaknesses = activeQuestions.filter(q => q.ease < 0.45);
+                const strengths = activeQuestions.filter(q => q.ease > 0.75);
+
+                const hardestQuestions = [...activeQuestions].sort((a, b) => a.ease - b.ease).slice(0, 10);
+                const easiestQuestions = [...activeQuestions].sort((a, b) => b.ease - a.ease).slice(0, 10);
+
+                const levelCounts = { 'ممتاز': 0, 'جيد جداً': 0, 'جيد': 0, 'مقبول': 0, 'راسب': 0 };
+                studentTotals.forEach(s => levelCounts[s.level.label]++);
+                
+                const levelData = Object.keys(levelCounts).map(key => ({
+                    name: key,
+                    value: levelCounts[key],
+                    color: getGradeLevel(
+                        key === 'ممتاز' ? totalScore * 0.9 : 
+                        key === 'جيد جداً' ? totalScore * 0.8 : 
+                        key === 'جيد' ? totalScore * 0.65 : 
+                        key === 'مقبول' ? totalScore * 0.55 : 0, 
+                        totalScore
+                    ).chartColor
+                })).filter(item => item.value > 0);
+
+                const binSize = totalScore / 5;
+                const frequencyData = Array.from({ length: 5 }, (_, i) => {
+                    const rangeStart = Math.round(i * binSize);
+                    const rangeEnd = Math.round((i + 1) * binSize);
+                    const count = allTotals.filter(t => t >= rangeStart && (i === 4 ? t <= rangeEnd : t < rangeEnd)).length;
+                    return {
+                        range: `${rangeStart} - ${rangeEnd}`,
+                        count
+                    };
+                });
+
+                return { 
+                    studentTotals, questionsAnalysis, weaknesses, strengths,
+                    avgTotal, passRate, levelData, minScore, maxScore,
+                    median, mode, stdDev, frequencyData, hardestQuestions, easiestQuestions 
+                };
+            }, [data, totalScore, maxScores]);
+
+            const generateReportText = () => {
+                let text = `## 📊 التقرير التحليلي الشامل: ${examTitle}\n\n`;
+
+                text += `### 1️⃣ نظرة عامة على الأداء:\n`;
+                text += `- **عدد الطلاب:** ${STUDENTS_COUNT} طالب.\n`;
+                text += `- **نسبة النجاح:** ${stats.passRate}%.\n`;
+                text += `- **المتوسط الحسابي:** ${stats.avgTotal} من ${totalScore}.\n`;
+                
+                let performance = "";
+                if (stats.passRate >= 90) performance = "ممتاز";
+                else if (stats.passRate >= 75) performance = "جيد جداً";
+                else if (stats.passRate >= 60) performance = "جيد";
+                else if (stats.passRate >= 50) performance = "مقبول";
+                else performance = "ضعيف - يحتاج لتدخل عاجل";
+                text += `- **التقدير العام للدفعة:** ${performance}.\n\n`;
+
+                text += `### 2️⃣ تحليل تجانس المجموعة (التشتت):\n`;
+                text += `- **المدى:** تفاوتت الدرجات بين أدنى درجة **(${stats.minScore})** وأعلى درجة **(${stats.maxScore})**.\n`;
+                text += `- **الانحراف المعياري:** (${stats.stdDev}). `;
+                
+                const stdDevRatio = stats.stdDev / totalScore;
+                if (stdDevRatio < 0.15) {
+                    text += "وهو مؤشر منخفض، يدل على أن مستويات الطلاب **متقاربة جداً (متجانسة)**.\n";
+                } else if (stdDevRatio > 0.25) {
+                    text += "وهو مؤشر مرتفع، يدل على وجود **فجوة كبيرة** وتفاوت حاد بين مستويات الطلاب (مجموعة غير متجانسة).\n";
+                } else {
+                    text += "وهو مؤشر متوسط، يدل على تباين طبيعي في المستويات.\n";
+                }
+                text += "\n";
+
+                text += `### 3️⃣ تحليل المفردات (نقاط القوة والضعف):\n`;
+                
+                const veryHard = stats.questionsAnalysis.filter(q => q.ease < 0.3 && q.status !== 'مستبعد');
+                const hard = stats.questionsAnalysis.filter(q => q.ease >= 0.3 && q.ease < 0.5 && q.status !== 'مستبعد');
+                const moderate = stats.questionsAnalysis.filter(q => q.ease >= 0.5 && q.ease < 0.75 && q.status !== 'مستبعد');
+                const easy = stats.questionsAnalysis.filter(q => q.ease >= 0.75 && q.status !== 'مستبعد');
+
+                if (veryHard.length > 0) {
+                    text += `- 🔴 **مفردات شديدة الصعوبة (إجابة صحيحة < 30%):** \n  (${veryHard.map(q => q.question).join('، ')}). \n  *التحليل:* قد تكون هذه الأسئلة غامضة، أو تقيس مهارة لم يتم تدريسها بعمق، أو تفوق مستوى الطلاب.\n`;
+                }
+                if (hard.length > 0) {
+                    text += `- 🟠 **مفردات صعبة/تحدي (30% - 50%):** \n  (${hard.map(q => q.question).join('، ')}). \n  *التحليل:* هذه الأسئلة تميز الطلاب المتفوقين، لكن شريحة كبيرة واجهت صعوبة فيها.\n`;
+                }
+                if (moderate.length > 0) {
+                    text += `- 🟡 **مفردات متوسطة (50% - 75%):** \n  عددها ${moderate.length} مفردة. تعكس المستوى الحقيقي لمعظم الطلاب.\n`;
+                }
+                if (easy.length > 0) {
+                    text += `- 🟢 **مفردات تم إتقانها ( > 75%):** \n  (${easy.map(q => q.question).join('، ')}). \n  *التحليل:* مؤشر إيجابي على استيعاب المفاهيم الأساسية.\n`;
+                }
+                text += "\n";
+
+                text += `### 4️⃣ التوصيات والمقترحات:\n`;
+                if (stats.passRate < 50) {
+                    text += `- ⚠️ **خطة طوارئ:** نسبة النجاح متدنية. يجب مراجعة أساليب التدريس وإعادة تقييم ملاءمة الاختبار للمنهج.\n`;
+                    text += `- 📚 تنفيذ حصص تقوية إلزامية للطلاب الراسبين تركز على الأساسيات.\n`;
+                } else if (veryHard.length > 3) {
+                    text += `- 📝 **مراجعة المفاهيم:** يوصى بإعادة شرح الدروس المتعلقة بالأسئلة الصعبة (${veryHard.slice(0,3).map(q => q.question).join('، ')}) وتوضيح الأخطاء الشائعة.\n`;
+                }
+                
+                if (stdDevRatio > 0.25) {
+                    text += `- 🤝 **تقليص الفجوة:** تفعيل استراتيجية "التعلم بالأقران" (Peer Learning) بدمج المتفوقين مع المتعثرين في مجموعات عمل.\n`;
+                }
+                
+                text += `- 🌟 **التعزيز:** تكريم الطلاب الحاصلين على تقدير ممتاز (${stats.levelData.find(l => l.name === 'ممتاز')?.value || 0} طلاب) لتحفيز التنافس الإيجابي.\n`;
+
+                return text;
+            };
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-10 print:space-y-4">
+                    <div className="hidden print:block text-center mb-8 border-b-2 border-slate-800 pb-4">
+                        <h1 className="text-3xl font-bold text-slate-900">{examTitle}</h1>
+                        <p className="text-slate-600 mt-2">تقرير التحليل الإحصائي لنتائج الطلاب</p>
+                        <div className="flex justify-center gap-6 mt-4 text-sm text-slate-500">
+                        <span>عدد الطلاب: {STUDENTS_COUNT}</span>
+                        <span>الدرجة الكلية: {totalScore}</span>
+                        <span>التاريخ: {new Date().toLocaleDateString('ar-EG')}</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4">
+                        <StatCard 
+                            title="المتوسط الحسابي" 
+                            value={stats.avgTotal} 
+                            subtext={`من أصل ${totalScore}`}
+                            icon={Icons.TrendingUp} 
+                            color="bg-blue-500" 
+                        />
+                        <StatCard 
+                            title="الوسيط (Median)" 
+                            value={stats.median} 
+                            subtext="القيمة المتوسطة"
+                            icon={Icons.Activity} 
+                            color="bg-purple-500" 
+                        />
+                        <StatCard 
+                            title="المنوال (Mode)" 
+                            value={stats.mode} 
+                            subtext="الدرجة الأكثر تكراراً"
+                            icon={Icons.Award} 
+                            color="bg-pink-500" 
+                        />
+                        <StatCard 
+                            title="الانحراف المعياري" 
+                            value={stats.stdDev} 
+                            subtext="مقياس التشتت"
+                            icon={Icons.Sigma} 
+                            color="bg-orange-500" 
+                        />
+                    </div>
+
+                    <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-blue-600 print:shadow-none print:border-slate-300 print:break-inside-avoid">
+                        <div className="prose prose-slate max-w-none prose-p:my-1 prose-headings:mb-2 prose-headings:mt-4">
+                        {generateReportText().split('\n').map((line, idx) => {
+                            if (line.startsWith('## ')) return <h2 key={idx} className="text-2xl font-bold text-slate-900 pb-2 border-b">{line.replace('## ', '')}</h2>;
+                            if (line.startsWith('### ')) return <h3 key={idx} className="text-lg font-bold text-blue-700 mt-4">{line.replace('### ', '')}</h3>;
+                            if (line.startsWith('- ')) return <li key={idx} className="list-disc mr-4 text-slate-700">{line.replace('- ', '')}</li>;
+                            return <p key={idx} className="text-slate-700 whitespace-pre-line">{line}</p>;
+                        })}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print:break-inside-avoid">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Icons.ArrowDown />
+                                المفردات الأكثر صعوبة
+                                </h3>
+                            </div>
+                            <div className="overflow-auto max-h-64 print:max-h-none print:overflow-visible">
+                                <table className="w-full text-center text-sm">
+                                <thead className="bg-slate-50 text-slate-600">
+                                    <tr>
+                                    <th className="p-2 border-b">الترتيب</th>
+                                    <th className="p-2 border-b">المفردة</th>
+                                    <th className="p-2 border-b">معامل السهولة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.hardestQuestions.map((q, idx) => (
+                                    <tr key={idx} className="border-b last:border-0">
+                                        <td className="p-2 font-bold text-slate-400">{idx + 1}</td>
+                                        <td className="p-2 font-bold text-slate-700">{q.question}</td>
+                                        <td className="p-2 text-red-600 font-bold">{q.ease}</td>
+                                    </tr>
+                                    ))}
+                                    {stats.hardestQuestions.length === 0 && (
+                                    <tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>
+                                    )}
+                                </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Icons.ArrowUp />
+                                المفردات الأكثر سهولة
+                                </h3>
+                            </div>
+                            <div className="overflow-auto max-h-64 print:max-h-none print:overflow-visible">
+                                <table className="w-full text-center text-sm">
+                                <thead className="bg-slate-50 text-slate-600">
+                                    <tr>
+                                    <th className="p-2 border-b">الترتيب</th>
+                                    <th className="p-2 border-b">المفردة</th>
+                                    <th className="p-2 border-b">معامل السهولة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.easiestQuestions.map((q, idx) => (
+                                    <tr key={idx} className="border-b last:border-0">
+                                        <td className="p-2 font-bold text-slate-400">{idx + 1}</td>
+                                        <td className="p-2 font-bold text-slate-700">{q.question}</td>
+                                        <td className="p-2 text-green-600 font-bold">{q.ease}</td>
+                                    </tr>
+                                    ))}
+                                    {stats.easiestQuestions.length === 0 && (
+                                    <tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>
+                                    )}
+                                </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300 print:break-inside-avoid">
+                        <div className="mb-6">
+                            <h3 className="text-lg font-bold text-slate-800">الرسم البياني لمعاملات السهولة</h3>
+                        </div>
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.questionsAnalysis}>
+                                <defs>
+                                <linearGradient id="colorEase" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                                </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="question" />
+                                <YAxis domain={[0, 1]} />
+                                <Area 
+                                type="monotone" 
+                                dataKey="ease" 
+                                name="معامل السهولة" 
+                                stroke="#3B82F6" 
+                                fillOpacity={1} 
+                                fill="url(#colorEase)" 
+                                />
+                                <Area 
+                                type="monotone" 
+                                dataKey="difficulty" 
+                                name="معامل الصعوبة" 
+                                stroke="#EF4444" 
+                                fill="none" 
+                                strokeDasharray="5 5" 
+                                />
+                            </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:break-inside-avoid">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4">تكرار الدرجات (فئات)</h3>
+                            <div className="h-72">
+                                <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.frequencyData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="range" fontSize={12} />
+                                    <YAxis allowDecimals={false} />
+                                    <Bar dataKey="count" name="عدد الطلاب" fill="#3B82F6" radius={[4, 4, 0, 0]}>
+                                    {stats.frequencyData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3B82F6' : '#60A5FA'} />
+                                    ))}
+                                    </Bar>
+                                </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4">توزيع المستويات</h3>
+                            <div className="h-72">
+                                <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                    data={stats.levelData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={90}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    >
+                                    {stats.levelData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                    </Pie>
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('entry'); 
+            const [studentsData, setStudentsData] = useState(initialData);
+            const [maxScores, setMaxScores] = useState(initialMaxScores);
+            const [examTitle, setExamTitle] = useState("تحليل نتائج الاختبار");
+
+            const totalExamScore = useMemo(() => maxScores.reduce((a, b) => a + b, 0), [maxScores]);
+
+            const handleTotalScoreChange = (newTotal) => {
+                const total = parseInt(newTotal);
+                if (isNaN(total)) return;
+
+                const newMaxScores = [...maxScores];
+                for (let i = 0; i < QUESTIONS_COUNT; i++) {
+                    if (i < total) {
+                        newMaxScores[i] = 1;
+                    } else {
+                        newMaxScores[i] = 0;
+                    }
+                }
+                setMaxScores(newMaxScores);
+                
+                setStudentsData(prev => prev.map(student => {
+                    const newStudent = { ...student };
+                    for (let i = 1; i <= QUESTIONS_COUNT; i++) {
+                        const qMax = newMaxScores[i-1];
+                        if (newStudent[`q${i}`] > qMax) {
+                            newStudent[`q${i}`] = qMax;
+                        }
+                    }
+                    return newStudent;
+                }));
+            };
+
+            const handleUpdateData = (id, key, value) => {
+                setStudentsData(prev => prev.map(s => s.id === id ? { ...s, [key]: value } : s));
+            };
+
+            const handleUpdateMaxScore = (index, value) => {
+                const newMaxScores = [...maxScores];
+                newMaxScores[index] = value;
+                setMaxScores(newMaxScores);
+                
+                if (value === 0) {
+                    setStudentsData(prev => prev.map(student => ({ ...student, [`q${index + 1}`]: 0 })));
+                } else {
+                    setStudentsData(prev => prev.map(student => {
+                        const currentScore = student[`q${index + 1}`];
+                        if (currentScore > value) {
+                            return { ...student, [`q${index + 1}`]: value };
+                        }
+                        return student;
+                    }));
+                }
+            };
+
+            const handleResetData = () => {
+                if (window.confirm("هل أنت متأكد من تصفير جميع درجات الطلاب؟ لا يمكن التراجع عن هذه الخطوة.")) {
+                    const resetData = studentsData.map(s => {
+                        const newS = { ...s };
+                        for (let i = 1; i <= QUESTIONS_COUNT; i++) {
+                            newS[`q${i}`] = 0;
+                        }
+                        return newS;
+                    });
+                    setStudentsData(resetData);
+                }
+            };
+
+            const handleRandomize = () => {
+                const randomData = studentsData.map(s => {
+                    const newS = { ...s };
+                    const studentPerformance = Math.random(); 
+                    
+                    for (let i = 1; i <= QUESTIONS_COUNT; i++) {
+                        const qMax = maxScores[i - 1];
+                        
+                        if (qMax === 0) {
+                            newS[`q${i}`] = 0;
+                            continue;
+                        }
+
+                        const scoreRatio = (studentPerformance * 0.7) + (Math.random() * 0.3);
+                        let score = Math.round(scoreRatio * qMax);
+                        score = Math.min(score, qMax); 
+                        
+                        newS[`q${i}`] = score;
+                    }
+                    return newS;
+                });
+                setStudentsData(randomData);
+            };
+
+            const handlePrint = () => {
+                window.print();
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-right" dir="rtl">
+                    <header className="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-30 no-print">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <div className="bg-blue-600 p-2 rounded-lg">
+                                    <Icons.Calculator />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold">نظام تحليل الاختبارات</h1>
+                                    <p className="text-xs text-slate-400">تحليل شامل (35 طالب)</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+                                
+                                <div className="flex items-center gap-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                                    <span className="text-xs text-slate-400 whitespace-nowrap pl-2">اختر الدرجة الكلية:</span>
+                                    <select 
+                                        onChange={(e) => handleTotalScoreChange(e.target.value)}
+                                        className="bg-slate-900 text-white text-sm font-bold rounded p-1 outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>-- اختر --</option>
+                                        <option value="60">60 درجة (60 مفردة)</option>
+                                        <option value="40">40 درجة (40 مفردة)</option>
+                                        <option value="30">30 درجة (30 مفردة)</option>
+                                        <option value="20">20 درجة (20 مفردة)</option>
+                                        <option value="10">10 درجات (10 مفردات)</option>
+                                    </select>
+                                </div>
+
+                                <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+                                    <span className="text-xs text-slate-400">المجموع الحالي:</span>
+                                    <span className="font-bold text-white text-lg">{totalExamScore}</span>
+                                </div>
+                                
+                                <div className="flex bg-slate-800 p-1 rounded-lg">
+                                    <button
+                                        onClick={() => setActiveTab('entry')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${
+                                            activeTab === 'entry' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <Icons.Table />
+                                        <span className="hidden sm:inline">إدخال الدرجات</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('analysis')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${
+                                            activeTab === 'analysis' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <Icons.FileText />
+                                        <span className="hidden sm:inline">التقرير</span>
+                                    </button>
+                                </div>
+
+                                {activeTab === 'analysis' && (
+                                    <button
+                                        onClick={handlePrint}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
+                                        title="طباعة التقرير"
+                                    >
+                                        <Icons.Printer />
+                                        <span className="hidden md:inline">طباعة</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto p-4 md:p-6 print:p-0 print:max-w-none">
+                        {activeTab === 'entry' ? (
+                            <DataEntryView 
+                                data={studentsData} 
+                                maxScores={maxScores}
+                                onUpdateData={handleUpdateData} 
+                                onUpdateMaxScore={handleUpdateMaxScore}
+                                onRandomize={handleRandomize}
+                                onReset={handleResetData}
+                                totalScore={totalExamScore}
+                                examTitle={examTitle}
+                                setExamTitle={setExamTitle}
+                            />
+                        ) : (
+                            <AnalysisDashboard 
+                                data={studentsData} 
+                                maxScores={maxScores} 
+                                totalScore={totalExamScore} 
+                                examTitle={examTitle}
+                            />
+                        )}
+                    </main>
+
+                    {/* Footer - Credits */}
+                    <footer className="bg-slate-900 border-t border-slate-800 p-4 mt-auto no-print">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+                            <div className="text-slate-400 flex items-center gap-2">
+                                <span>تصميم وتطوير:</span>
+                                <span className="font-bold text-white">أ.عبدالله بن خلف الرواحي</span>
+                            </div>
+                            <div className="text-slate-500 text-xs">
+                                جميع الحقوق محفوظة © {new Date().getFullYear()}
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
