@@ -13,15 +13,15 @@
     <!-- تحميل مكتبة Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 1. تحميل React و ReactDOM (v18) -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 1. تحميل React و ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     
     <!-- 2. تحميل المكتبات المساعدة -->
-    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     
-    <!-- 3. تحميل Recharts (نسخة 2.1.12 المستقرة للمتصفح) -->
-    <script src="https://unpkg.com/recharts@2.1.12/umd/Recharts.js"></script>
+    <!-- 3. تحميل Recharts -->
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
     
     <!-- 4. تحميل Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -51,7 +51,7 @@
             background: #94a3b8; 
         }
 
-        /* تنسيقات الطباعة (A4) */
+        /* تنسيقات الطباعة */
         @media print {
             @page { margin: 0.5cm; size: A4; }
             body { 
@@ -76,13 +76,24 @@
             }
             .print-border { border: 1px solid #000 !important; }
             
-            /* إصلاح عرض الرسوم البيانية في الطباعة */
-            .recharts-wrapper { width: 100% !important; height: auto !important; }
             .recharts-responsive-container { height: 300px !important; width: 100% !important; }
-            
             .shadow-sm, .shadow-lg { box-shadow: none !important; }
             .bg-slate-50, .bg-white { background-color: #fff !important; }
             .border { border-color: #000 !important; }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
         }
     </style>
 </head>
@@ -92,10 +103,9 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
         
-        // استدعاء Recharts
         const RechartsLib = window.Recharts || {};
         const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, ReferenceLine 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell 
         } = RechartsLib;
 
         // --- أيقونات SVG ---
@@ -119,7 +129,9 @@
             Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
             Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
             Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
-            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            Folder: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         };
 
         // --- ثوابت المحتوى (الدراسات الاجتماعية) ---
@@ -159,14 +171,12 @@
             ]
         };
 
-        // --- إعدادات النظام ---
         const DEFAULT_STUDENTS_COUNT = 100;
         const QUESTIONS_COUNT = 60; 
 
         // --- دالة حساب المستوى ---
         const getGradeLevel = (score, totalScore) => {
             if (totalScore === 0) return { label: '-', color: 'bg-slate-100 text-slate-500', chartColor: '#cbd5e1' };
-            
             const percentage = (score / totalScore) * 100;
             if (percentage >= 87.5) return { label: 'ممتاز', color: 'bg-emerald-100 text-emerald-700', chartColor: '#10B981' };
             if (percentage >= 75) return { label: 'جيد جداً', color: 'bg-blue-100 text-blue-700', chartColor: '#3B82F6' };
@@ -175,7 +185,6 @@
             return { label: 'راسب', color: 'bg-red-100 text-red-700', chartColor: '#EF4444' };
         };
 
-        // --- دوال إحصائية مساعدة ---
         const calculateMedian = (values) => {
             if (values.length === 0) return 0;
             const sorted = [...values].sort((a, b) => a - b);
@@ -206,7 +215,6 @@
             return Math.sqrt(avgSquareDiff).toFixed(2);
         };
 
-        // --- توليد بيانات فارغة ---
         const generateInitialData = (count) => {
             return Array.from({ length: count }, (_, i) => {
                 const student = { id: i + 1, name: `طالب ${i + 1}` };
@@ -217,7 +225,6 @@
             });
         };
 
-        // توزيع افتراضي للدرجات
         const initialMaxScores = Array(QUESTIONS_COUNT).fill(1); 
 
         // --- المكونات ---
@@ -237,45 +244,7 @@
             </div>
         );
 
-        // --- مكون جديد: استمارة تفريغ التحليل ---
-        const ItemAnalysisForm = ({ hardestQuestions }) => {
-            // حالة لحفظ مدخلات المستخدم في الاستمارة
-            const [formInputs, setFormInputs] = useState(() => {
-                const savedInputs = localStorage.getItem('formInputs');
-                return savedInputs ? JSON.parse(savedInputs) : {
-                    school: '',
-                    subject: '',
-                    grade: '',
-                    date: new Date().toLocaleDateString('ar-EG'),
-                    items: {} // { itemKey: { objective: '', cognitive: '', reason: '', plan: '' } }
-                };
-            });
-
-            // حفظ مدخلات الاستمارة عند التغيير
-            useEffect(() => {
-                localStorage.setItem('formInputs', JSON.stringify(formInputs));
-            }, [formInputs]);
-
-            const handleInputChange = (e, field) => {
-                setFormInputs(prev => ({ ...prev, [field]: e.target.value }));
-            };
-
-            const handleItemChange = (questionKey, field, value) => {
-                setFormInputs(prev => ({
-                    ...prev,
-                    items: {
-                        ...prev.items,
-                        [questionKey]: {
-                            ...(prev.items[questionKey] || {}),
-                            [field]: value
-                        }
-                    }
-                }));
-            };
-
-            // المنطق الذكي لاختيار الأسئلة:
-            // 1. جميع الأسئلة التي يقل معامل سهولتها عن 0.5 (أسئلة صعبة)
-            // 2. إذا كان عددها أقل من 5، نأخذ أصعب 5 أسئلة في الاختبار بغض النظر عن معامل السهولة
+        const ItemAnalysisForm = ({ hardestQuestions, formInputs, handleInputChange, handleItemChange }) => {
             const questionsToShow = useMemo(() => {
                 const difficultQuestions = hardestQuestions.filter(q => q.ease < 0.5);
                 if (difficultQuestions.length >= 5) {
@@ -285,7 +254,6 @@
                 }
             }, [hardestQuestions]);
 
-            // Helper to render a select and textarea combo
             const RenderField = ({ qKey, field, options, placeholder }) => {
                 const currentValue = formInputs.items[qKey]?.[field] || '';
                 
@@ -317,7 +285,6 @@
                         استمارة تفريغ تحليل أداء الطلاب في مفردات الورقة الامتحانية
                     </h2>
                     
-                    {/* Header Inputs */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 print:grid-cols-3 print:gap-2 text-sm">
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-700 print:text-black">اسم المدرسة:</span>
@@ -371,43 +338,21 @@
                                             {q.difficulty}
                                         </td>
                                         <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="objective" 
-                                                options={SOCIAL_STUDIES_CONTENT.objectives}
-                                                placeholder="اكتب الهدف..."
-                                            />
+                                            <RenderField qKey={q.question} field="objective" options={SOCIAL_STUDIES_CONTENT.objectives} placeholder="اكتب الهدف..." />
                                         </td>
                                         <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="cognitive" 
-                                                options={SOCIAL_STUDIES_CONTENT.cognitive}
-                                                placeholder="مستوى..."
-                                            />
+                                            <RenderField qKey={q.question} field="cognitive" options={SOCIAL_STUDIES_CONTENT.cognitive} placeholder="مستوى..." />
                                         </td>
                                         <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="reason" 
-                                                options={SOCIAL_STUDIES_CONTENT.reasons}
-                                                placeholder="السبب..."
-                                            />
+                                            <RenderField qKey={q.question} field="reason" options={SOCIAL_STUDIES_CONTENT.reasons} placeholder="السبب..." />
                                         </td>
                                         <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="plan" 
-                                                options={SOCIAL_STUDIES_CONTENT.plans}
-                                                placeholder="الخطة..."
-                                            />
+                                            <RenderField qKey={q.question} field="plan" options={SOCIAL_STUDIES_CONTENT.plans} placeholder="الخطة..." />
                                         </td>
                                     </tr>
                                 ))}
                                 {questionsToShow.length === 0 && (
-                                    <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-400">لا توجد بيانات مفردات لعرضها حالياً</td>
-                                    </tr>
+                                    <tr><td colSpan="6" className="p-8 text-center text-slate-400">لا توجد بيانات مفردات لعرضها حالياً</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -421,10 +366,80 @@
             );
         };
 
+        // --- File Manager Modal Component ---
+        const FileManagerModal = ({ isOpen, onClose, savedFiles, onSave, onLoad, onDelete }) => {
+            const [newFileName, setNewFileName] = useState("");
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 m-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <Icons.Folder /> إدارة الملفات المحفوظة
+                            </h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-red-500">
+                                <Icons.X />
+                            </button>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">حفظ العمل الحالي باسم:</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:border-blue-500"
+                                    placeholder="مثلاً: عاشر 1 - علوم"
+                                    value={newFileName}
+                                    onChange={(e) => setNewFileName(e.target.value)}
+                                />
+                                <button 
+                                    onClick={() => { if(newFileName) { onSave(newFileName); setNewFileName(""); } }}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                                >
+                                    حفظ
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="max-h-60 overflow-y-auto">
+                            <h4 className="text-sm font-bold text-slate-600 mb-2">الملفات المحفوظة سابقاً:</h4>
+                            {savedFiles.length === 0 ? (
+                                <p className="text-sm text-slate-400 text-center py-4">لا توجد ملفات محفوظة.</p>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {savedFiles.map(file => (
+                                        <li key={file} className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 hover:bg-slate-100">
+                                            <span className="font-medium text-slate-700">{file}</span>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => onLoad(file)}
+                                                    className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                                                >
+                                                    تحميل
+                                                </button>
+                                                <button 
+                                                    onClick={() => onDelete(file)}
+                                                    className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200"
+                                                >
+                                                    حذف
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const DataEntryView = ({ 
             data, maxScores, onUpdateData, onUpdateMaxScore, onRandomize, onReset, 
             totalScore, examTitle, setExamTitle, studentCount, onStudentCountChange,
-            onExport, onImport
+            onExport, onImport, onOpenFileManager
         }) => {
             const fileInputRef = useRef(null);
 
@@ -434,10 +449,7 @@
                 if (maxScore === 0) return;
 
                 if (maxScore === 1) {
-                    if (value === '') {
-                        onUpdateData(studentId, qKey, 0); 
-                        return;
-                    }
+                    if (value === '') { onUpdateData(studentId, qKey, 0); return; }
                     if (value !== '0' && value !== '1') return;
                     onUpdateData(studentId, qKey, parseInt(value));
                 } else {
@@ -456,16 +468,10 @@
                 onUpdateData(studentId, 'name', value);
             };
 
-            const triggerFileUpload = () => {
-                fileInputRef.current.click();
-            };
-
+            const triggerFileUpload = () => fileInputRef.current.click();
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    onImport(file);
-                }
-                // Reset value so same file can be selected again
+                if (file) onImport(file);
                 e.target.value = null;
             };
 
@@ -483,7 +489,6 @@
                                 />
                                 <Icons.PenLine className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            
                             <div className="flex items-center gap-4 mt-2">
                                 <p className="text-xs text-slate-500 flex items-center gap-1">
                                     <Icons.Table />
@@ -509,47 +514,25 @@
                                 المجموع الحالي: {totalScore}
                             </div>
                             
-                            {/* Backup & Restore Buttons */}
-                            <button 
-                                onClick={onExport}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap"
-                                title="حفظ نسخة احتياطية (ملف JSON)"
-                            >
-                                <Icons.Download />
-                                تصدير
+                            <button onClick={onOpenFileManager} className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-slate-700 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap" title="إدارة الملفات المحفوظة">
+                                <Icons.Folder /> ملفات محفوظة
                             </button>
 
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={handleFileChange} 
-                                accept=".json" 
-                                className="hidden" 
-                            />
-                            <button 
-                                onClick={triggerFileUpload}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap"
-                                title="استعادة نسخة احتياطية"
-                            >
-                                <Icons.Upload />
-                                استيراد
+                            <button onClick={onExport} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap" title="تصدير كملف">
+                                <Icons.Download /> تصدير
                             </button>
 
-                            <button 
-                                onClick={onReset}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 rounded-lg transition-colors whitespace-nowrap"
-                                title="مسح جميع درجات الطلاب"
-                            >
-                                <Icons.Trash2 />
-                                تصفير
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+                            <button onClick={triggerFileUpload} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap" title="استيراد ملف">
+                                <Icons.Upload /> استيراد
                             </button>
 
-                            <button 
-                                onClick={onRandomize}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
-                            >
-                                <Icons.RefreshCw />
-                                بيانات تجريبية
+                            <button onClick={onReset} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 rounded-lg transition-colors whitespace-nowrap" title="مسح جميع البيانات">
+                                <Icons.Trash2 /> تصفير
+                            </button>
+
+                            <button onClick={onRandomize} className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap">
+                                <Icons.RefreshCw /> بيانات تجريبية
                             </button>
                         </div>
                     </div>
@@ -573,13 +556,7 @@
                                         <th key={i} className={`p-1 border-b border-l ${score === 0 ? 'bg-slate-200' : 'bg-blue-100/50'}`}>
                                             <div className="flex flex-col items-center gap-1">
                                                 <span className={`text-[10px] ${score === 0 ? 'text-slate-400' : 'text-slate-500'}`}>من</span>
-                                                <input 
-                                                    type="number" 
-                                                    min="0"
-                                                    value={score}
-                                                    onChange={(e) => handleMaxScoreChange(i, e.target.value)}
-                                                    className={`w-10 text-center text-xs font-bold rounded px-1 py-0.5 outline-none border ${score === 0 ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-white text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-400'}`}
-                                                />
+                                                <input type="number" min="0" value={score} onChange={(e) => handleMaxScoreChange(i, e.target.value)} className={`w-10 text-center text-xs font-bold rounded px-1 py-0.5 outline-none border ${score === 0 ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-white text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-400'}`} />
                                             </div>
                                         </th>
                                     ))}
@@ -595,41 +572,18 @@
                                         <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
                                             <td className="p-2 text-xs font-mono text-slate-400 border-l border-slate-100 bg-slate-50 sticky right-0 z-10">{index + 1}</td>
                                             <td className="p-1 border-l border-slate-100 bg-white sticky right-[50px] z-10">
-                                                <input 
-                                                    type="text" 
-                                                    value={student.name}
-                                                    onChange={(e) => handleNameChange(student.id, e.target.value)}
-                                                    className="w-full p-1 text-sm font-medium text-slate-700 text-right focus:outline-none focus:bg-blue-50"
-                                                />
+                                                <input type="text" value={student.name} onChange={(e) => handleNameChange(student.id, e.target.value)} className="w-full p-1 text-sm font-medium text-slate-700 text-right focus:outline-none focus:bg-blue-50" />
                                             </td>
                                             {Array.from({ length: QUESTIONS_COUNT }, (_, i) => {
                                                 const isDisabled = maxScores[i] === 0;
                                                 return (
                                                     <td key={i} className={`p-1 border-l border-slate-100 ${isDisabled ? 'bg-slate-50' : ''}`}>
-                                                        <input
-                                                            type="text"
-                                                            inputMode={maxScores[i] === 1 ? "numeric" : "decimal"}
-                                                            disabled={isDisabled}
-                                                            value={student[`q${i + 1}`] === 0 ? '' : student[`q${i + 1}`]}
-                                                            placeholder={isDisabled ? '-' : '0'}
-                                                            onChange={(e) => handleScoreChange(student.id, i, e.target.value)}
-                                                            className={`w-full text-center p-1 rounded outline-none text-sm font-bold transition-all ${
-                                                                isDisabled ? 'bg-transparent text-slate-300 cursor-not-allowed' :
-                                                                student[`q${i + 1}`] === maxScores[i] ? 'text-green-600 bg-green-50 focus:ring-2 focus:ring-green-400' :
-                                                                student[`q${i + 1}`] === 0 ? 'text-slate-300 focus:ring-2 focus:ring-blue-500' : 'text-slate-700 bg-blue-50/10 focus:ring-2 focus:ring-blue-500'
-                                                            }`}
-                                                        />
+                                                        <input type="text" inputMode={maxScores[i] === 1 ? "numeric" : "decimal"} disabled={isDisabled} value={student[`q${i + 1}`] === 0 ? '' : student[`q${i + 1}`]} placeholder={isDisabled ? '-' : '0'} onChange={(e) => handleScoreChange(student.id, i, e.target.value)} className={`w-full text-center p-1 rounded outline-none text-sm font-bold transition-all ${isDisabled ? 'bg-transparent text-slate-300 cursor-not-allowed' : student[`q${i + 1}`] === maxScores[i] ? 'text-green-600 bg-green-50 focus:ring-2 focus:ring-green-400' : student[`q${i + 1}`] === 0 ? 'text-slate-300 focus:ring-2 focus:ring-blue-500' : 'text-slate-700 bg-blue-50/10 focus:ring-2 focus:ring-blue-500'}`} />
                                                     </td>
                                                 );
                                             })}
-                                            <td className={`p-2 font-bold bg-emerald-50/30 ${roundedTotal > totalScore ? 'text-red-600' : 'text-emerald-700'}`}>
-                                                {roundedTotal}
-                                            </td>
-                                            <td className="p-2 border-r border-slate-100">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${level.color}`}>
-                                                    {level.label}
-                                                </span>
-                                            </td>
+                                            <td className={`p-2 font-bold bg-emerald-50/30 ${roundedTotal > totalScore ? 'text-red-600' : 'text-emerald-700'}`}>{roundedTotal}</td>
+                                            <td className="p-2 border-r border-slate-100"><span className={`px-2 py-1 rounded text-xs font-bold ${level.color}`}>{level.label}</span></td>
                                         </tr>
                                     );
                                 })}
@@ -640,7 +594,7 @@
             );
         };
 
-        const AnalysisDashboard = ({ data, maxScores, totalScore, examTitle }) => {
+        const AnalysisDashboard = ({ data, maxScores, totalScore, examTitle, formInputs, handleFormInputChange, handleFormItemChange }) => {
             const stats = useMemo(() => {
                 const activeStudents = data.filter((s, idx) => {
                     const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
@@ -667,8 +621,6 @@
                 const passScore = totalScore * 0.5;
                 const passCount = studentTotals.filter(s => s.total >= passScore).length;
                 const passRate = actualStudentCount > 0 ? ((passCount / actualStudentCount) * 100).toFixed(1) : 0;
-
-                // Mastery Calculation: Students with >= 75% score (Very Good & Excellent)
                 const masteryThreshold = totalScore * 0.75;
                 const masteryCount = studentTotals.filter(s => s.total >= masteryThreshold).length;
                 const masteryRate = actualStudentCount > 0 ? ((masteryCount / actualStudentCount) * 100).toFixed(1) : 0;
@@ -682,36 +634,20 @@
                     const qMaxScore = maxScores[i];
                     
                     if (qMaxScore === 0) {
-                        return {
-                            question: `م${i + 1}`,
-                            maxScore: 0,
-                            sum: 0,
-                            ease: 0,
-                            difficulty: 0,
-                            status: 'مستبعد'
-                        };
+                        return { question: `م${i + 1}`, maxScore: 0, sum: 0, ease: 0, difficulty: 0, status: 'مستبعد' };
                     }
 
                     const scores = analysisData.map(s => s[qKey]);
                     const sum = scores.reduce((a, b) => a + b, 0);
-                    
-                    const easeIndex = actualStudentCount > 0 ? sum / (actualStudentCount * qMaxScore) : 0;
-                    const diffIndex = 1 - easeIndex;
-                    
+                    const easeIndex = actualStudentCount > 0 ? parseFloat((sum / (actualStudentCount * qMaxScore)).toFixed(2)) : 0;
+                    const diffIndex = parseFloat((1 - easeIndex).toFixed(2));
                     let status = 'متوسط';
                     if (easeIndex > 0.8) status = 'سهل جداً';
                     else if (easeIndex > 0.6) status = 'سهل';
                     else if (easeIndex < 0.25) status = 'صعب جداً';
                     else if (easeIndex < 0.45) status = 'صعب';
 
-                    return {
-                        question: `م${i + 1}`,
-                        maxScore: qMaxScore,
-                        sum: Math.round(sum * 10) / 10,
-                        ease: parseFloat(easeIndex.toFixed(2)),
-                        difficulty: parseFloat(diffIndex.toFixed(2)),
-                        status
-                    };
+                    return { question: `م${i + 1}`, maxScore: qMaxScore, sum: Math.round(sum * 10) / 10, ease: easeIndex, difficulty: diffIndex, status };
                 });
 
                 const activeQuestions = questionsAnalysis.filter(q => q.status !== 'مستبعد');
@@ -741,24 +677,19 @@
                     const rangeStart = Math.round(i * binSize);
                     const rangeEnd = Math.round((i + 1) * binSize);
                     const count = allTotals.filter(t => t >= rangeStart && (i === 4 ? t <= rangeEnd : t < rangeEnd)).length;
-                    return {
-                        range: `${rangeStart} - ${rangeEnd}`,
-                        count
-                    };
+                    return { range: `${rangeStart} - ${rangeEnd}`, count };
                 });
 
                 return { 
                     studentTotals, questionsAnalysis, weaknesses, strengths,
                     avgTotal, passRate, levelData, minScore, maxScore,
                     median, mode, stdDev, frequencyData, hardestQuestions, easiestQuestions,
-                    actualStudentCount, masteryRate,
-                    activeQuestionsCount: activeQuestions.length 
+                    actualStudentCount, masteryRate, activeQuestionsCount: activeQuestions.length 
                 };
             }, [data, totalScore, maxScores]);
 
             const generateReportText = () => {
                 let text = `## 📊 التقرير التحليلي الشامل: ${examTitle}\n\n`;
-
                 text += `### 1️⃣ نظرة عامة على الأداء:\n`;
                 text += `- **عدد الطلاب (الفعلي):** ${stats.actualStudentCount} طالب.\n`;
                 text += `- **عدد المفردات المحللة:** ${stats.activeQuestionsCount} مفردة.\n`;
@@ -848,34 +779,10 @@
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4">
-                        <StatCard 
-                            title="المتوسط الحسابي" 
-                            value={stats.avgTotal} 
-                            subtext={`من أصل ${totalScore}`}
-                            icon={Icons.TrendingUp} 
-                            color="bg-blue-500" 
-                        />
-                        <StatCard 
-                            title="نسبة الإتقان" 
-                            value={`${stats.masteryRate}%`} 
-                            subtext="الطلاب فوق 75%"
-                            icon={Icons.Star} 
-                            color="bg-yellow-500" 
-                        />
-                        <StatCard 
-                            title="المنوال (Mode)" 
-                            value={stats.mode} 
-                            subtext="الدرجة الأكثر تكراراً"
-                            icon={Icons.Award} 
-                            color="bg-pink-500" 
-                        />
-                        <StatCard 
-                            title="الانحراف المعياري" 
-                            value={stats.stdDev} 
-                            subtext="مقياس التشتت"
-                            icon={Icons.Sigma} 
-                            color="bg-orange-500" 
-                        />
+                        <StatCard title="المتوسط الحسابي" value={stats.avgTotal} subtext={`من أصل ${totalScore}`} icon={Icons.TrendingUp} color="bg-blue-500" />
+                        <StatCard title="نسبة الإتقان" value={`${stats.masteryRate}%`} subtext="الطلاب فوق 75%" icon={Icons.Star} color="bg-yellow-500" />
+                        <StatCard title="المنوال (Mode)" value={stats.mode} subtext="الدرجة الأكثر تكراراً" icon={Icons.Award} color="bg-pink-500" />
+                        <StatCard title="الانحراف المعياري" value={stats.stdDev} subtext="مقياس التشتت" icon={Icons.Sigma} color="bg-orange-500" />
                     </div>
 
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-blue-600 print:shadow-none print:border-slate-300 print:break-inside-avoid">
@@ -889,25 +796,22 @@
                         </div>
                     </div>
 
-                    {/* استمارة التحليل الإلكتروني (القسم الجديد) */}
-                    <ItemAnalysisForm hardestQuestions={stats.hardestQuestions} />
+                    <ItemAnalysisForm 
+                        hardestQuestions={stats.hardestQuestions} 
+                        formInputs={formInputs}
+                        handleInputChange={handleFormInputChange}
+                        handleItemChange={handleFormItemChange}
+                    />
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print:break-inside-avoid">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Icons.ArrowDown />
-                                المفردات الأكثر صعوبة
-                                </h3>
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Icons.ArrowDown /> المفردات الأكثر صعوبة</h3>
                             </div>
                             <div className="overflow-auto max-h-64 print:max-h-none print:overflow-visible">
                                 <table className="w-full text-center text-sm">
                                 <thead className="bg-slate-50 text-slate-600">
-                                    <tr>
-                                    <th className="p-2 border-b">الترتيب</th>
-                                    <th className="p-2 border-b">المفردة</th>
-                                    <th className="p-2 border-b">معامل السهولة</th>
-                                    </tr>
+                                    <tr><th className="p-2 border-b">الترتيب</th><th className="p-2 border-b">المفردة</th><th className="p-2 border-b">معامل السهولة</th></tr>
                                 </thead>
                                 <tbody>
                                     {stats.hardestQuestions.slice(0, 10).map((q, idx) => (
@@ -917,9 +821,7 @@
                                         <td className="p-2 text-red-600 font-bold">{q.ease}</td>
                                     </tr>
                                     ))}
-                                    {stats.hardestQuestions.length === 0 && (
-                                    <tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>
-                                    )}
+                                    {stats.hardestQuestions.length === 0 && (<tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}
                                 </tbody>
                                 </table>
                             </div>
@@ -927,19 +829,12 @@
 
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Icons.ArrowUp />
-                                المفردات الأكثر سهولة
-                                </h3>
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Icons.ArrowUp /> المفردات الأكثر سهولة</h3>
                             </div>
                             <div className="overflow-auto max-h-64 print:max-h-none print:overflow-visible">
                                 <table className="w-full text-center text-sm">
                                 <thead className="bg-slate-50 text-slate-600">
-                                    <tr>
-                                    <th className="p-2 border-b">الترتيب</th>
-                                    <th className="p-2 border-b">المفردة</th>
-                                    <th className="p-2 border-b">معامل السهولة</th>
-                                    </tr>
+                                    <tr><th className="p-2 border-b">الترتيب</th><th className="p-2 border-b">المفردة</th><th className="p-2 border-b">معامل السهولة</th></tr>
                                 </thead>
                                 <tbody>
                                     {stats.easiestQuestions.map((q, idx) => (
@@ -949,9 +844,7 @@
                                         <td className="p-2 text-green-600 font-bold">{q.ease}</td>
                                     </tr>
                                     ))}
-                                    {stats.easiestQuestions.length === 0 && (
-                                    <tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>
-                                    )}
+                                    {stats.easiestQuestions.length === 0 && (<tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}
                                 </tbody>
                                 </table>
                             </div>
@@ -959,37 +852,16 @@
                     </div>
 
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300 print:break-inside-avoid">
-                        <div className="mb-6">
-                            <h3 className="text-lg font-bold text-slate-800">الرسم البياني لمعاملات السهولة</h3>
-                        </div>
+                        <div className="mb-6"><h3 className="text-lg font-bold text-slate-800">الرسم البياني لمعاملات السهولة</h3></div>
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={stats.questionsAnalysis}>
-                                <defs>
-                                <linearGradient id="colorEase" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                                </linearGradient>
-                                </defs>
+                                <defs><linearGradient id="colorEase" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/><stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/></linearGradient></defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="question" />
                                 <YAxis domain={[0, 1]} />
-                                <Area 
-                                type="monotone" 
-                                dataKey="ease" 
-                                name="معامل السهولة" 
-                                stroke="#3B82F6" 
-                                fillOpacity={1} 
-                                fill="url(#colorEase)" 
-                                />
-                                <Area 
-                                type="monotone" 
-                                dataKey="difficulty" 
-                                name="معامل الصعوبة" 
-                                stroke="#EF4444" 
-                                fill="none" 
-                                strokeDasharray="5 5" 
-                                />
+                                <Area type="monotone" dataKey="ease" name="معامل السهولة" stroke="#3B82F6" fillOpacity={1} fill="url(#colorEase)" />
+                                <Area type="monotone" dataKey="difficulty" name="معامل الصعوبة" stroke="#EF4444" fill="none" strokeDasharray="5 5" />
                             </AreaChart>
                             </ResponsiveContainer>
                         </div>
@@ -1005,9 +877,7 @@
                                     <XAxis dataKey="range" fontSize={12} />
                                     <YAxis allowDecimals={false} />
                                     <Bar dataKey="count" name="عدد الطلاب" fill="#3B82F6" radius={[4, 4, 0, 0]}>
-                                    {stats.frequencyData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3B82F6' : '#60A5FA'} />
-                                    ))}
+                                    {stats.frequencyData.map((entry, index) => (<Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3B82F6' : '#60A5FA'} />))}
                                     </Bar>
                                 </BarChart>
                                 </ResponsiveContainer>
@@ -1019,19 +889,8 @@
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie
-                                    data={stats.levelData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={90}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                    >
-                                    {stats.levelData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
+                                    <Pie data={stats.levelData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                    {stats.levelData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
                                     </Pie>
                                     <Legend verticalAlign="bottom" height={36} />
                                 </PieChart>
@@ -1046,76 +905,116 @@
         const App = () => {
             const [activeTab, setActiveTab] = useState('entry'); 
             const [studentsCount, setStudentsCount] = useState(DEFAULT_STUDENTS_COUNT);
+            const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
+            
+            // تهيئة البيانات من التخزين المحلي أو إنشاء جديدة
+            const [savedFiles, setSavedFiles] = useState(() => {
+                const files = localStorage.getItem('exam_analysis_saves');
+                return files ? JSON.parse(files) : {};
+            });
+
+            // البيانات الحالية (Auto-save state)
             const [studentsData, setStudentsData] = useState(() => {
-                const savedData = localStorage.getItem('studentsData');
+                const savedData = localStorage.getItem('current_studentsData');
                 return savedData ? JSON.parse(savedData) : generateInitialData(DEFAULT_STUDENTS_COUNT);
             });
             const [maxScores, setMaxScores] = useState(() => {
-                const savedScores = localStorage.getItem('maxScores');
+                const savedScores = localStorage.getItem('current_maxScores');
                 return savedScores ? JSON.parse(savedScores) : initialMaxScores;
             });
             const [examTitle, setExamTitle] = useState(() => {
-                return localStorage.getItem('examTitle') || "تحليل نتائج الاختبار";
+                return localStorage.getItem('current_examTitle') || "تحليل نتائج الاختبار";
+            });
+            const [formInputs, setFormInputs] = useState(() => {
+                const savedInputs = localStorage.getItem('current_formInputs');
+                return savedInputs ? JSON.parse(savedInputs) : {
+                    school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {}
+                };
             });
 
-            // Effect to save data on changes
+            // حفظ الحالة الحالية تلقائياً عند التغيير (Auto-save)
+            useEffect(() => { localStorage.setItem('current_studentsData', JSON.stringify(studentsData)); }, [studentsData]);
+            useEffect(() => { localStorage.setItem('current_maxScores', JSON.stringify(maxScores)); }, [maxScores]);
+            useEffect(() => { localStorage.setItem('current_examTitle', examTitle); }, [examTitle]);
+            useEffect(() => { localStorage.setItem('current_formInputs', JSON.stringify(formInputs)); }, [formInputs]);
+            
+            // حفظ قائمة الملفات عند التغيير
             useEffect(() => {
-                localStorage.setItem('studentsData', JSON.stringify(studentsData));
-            }, [studentsData]);
+                localStorage.setItem('exam_analysis_saves', JSON.stringify(savedFiles));
+            }, [savedFiles]);
 
-            useEffect(() => {
-                localStorage.setItem('maxScores', JSON.stringify(maxScores));
-            }, [maxScores]);
-
-            useEffect(() => {
-                localStorage.setItem('examTitle', examTitle);
-            }, [examTitle]);
-
-            // Effect to handle student count changes
+            // Effect to handle student count changes dynamically
             useEffect(() => {
                 setStudentsData(prev => {
                     if (prev.length === studentsCount) return prev;
                     if (prev.length < studentsCount) {
-                        // Add more students
                         const newStudents = Array.from({ length: studentsCount - prev.length }, (_, i) => {
                             const id = prev.length + i + 1;
                             const student = { id: id, name: `طالب ${id}` };
-                            for (let q = 1; q <= QUESTIONS_COUNT; q++) {
-                                student[`q${q}`] = 0;
-                            }
+                            for (let q = 1; q <= QUESTIONS_COUNT; q++) { student[`q${q}`] = 0; }
                             return student;
                         });
                         return [...prev, ...newStudents];
                     } else {
-                        // Remove students
                         return prev.slice(0, studentsCount);
                     }
                 });
             }, [studentsCount]);
 
+            // Handlers for FileManager
+            const handleSaveFile = (fileName) => {
+                const newSave = {
+                    studentsData,
+                    maxScores,
+                    examTitle,
+                    studentsCount,
+                    formInputs,
+                    timestamp: new Date().toISOString()
+                };
+                setSavedFiles(prev => ({ ...prev, [fileName]: newSave }));
+                alert(`تم حفظ الملف باسم "${fileName}" بنجاح.`);
+                setIsFileManagerOpen(false);
+            };
+
+            const handleLoadFile = (fileName) => {
+                const file = savedFiles[fileName];
+                if (file) {
+                    setStudentsData(file.studentsData);
+                    setMaxScores(file.maxScores);
+                    setExamTitle(file.examTitle);
+                    setStudentsCount(file.studentsCount || DEFAULT_STUDENTS_COUNT);
+                    setFormInputs(file.formInputs || { school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {} });
+                    alert(`تم تحميل الملف "${fileName}".`);
+                    setIsFileManagerOpen(false);
+                }
+            };
+
+            const handleDeleteFile = (fileName) => {
+                if (confirm(`هل أنت متأكد من حذف الملف "${fileName}"؟`)) {
+                    setSavedFiles(prev => {
+                        const newFiles = { ...prev };
+                        delete newFiles[fileName];
+                        return newFiles;
+                    });
+                }
+            };
+
+            // Existing handlers...
             const totalExamScore = useMemo(() => maxScores.reduce((a, b) => a + b, 0), [maxScores]);
 
             const handleTotalScoreChange = (newTotal) => {
                 const total = parseInt(newTotal);
                 if (isNaN(total)) return;
-
                 const newMaxScores = [...maxScores];
                 for (let i = 0; i < QUESTIONS_COUNT; i++) {
-                    if (i < total) {
-                        newMaxScores[i] = 1;
-                    } else {
-                        newMaxScores[i] = 0;
-                    }
+                    newMaxScores[i] = i < total ? 1 : 0;
                 }
                 setMaxScores(newMaxScores);
-                
                 setStudentsData(prev => prev.map(student => {
                     const newStudent = { ...student };
                     for (let i = 1; i <= QUESTIONS_COUNT; i++) {
                         const qMax = newMaxScores[i-1];
-                        if (newStudent[`q${i}`] > qMax) {
-                            newStudent[`q${i}`] = qMax;
-                        }
+                        if (newStudent[`q${i}`] > qMax) newStudent[`q${i}`] = qMax;
                     }
                     return newStudent;
                 }));
@@ -1129,16 +1028,12 @@
                 const newMaxScores = [...maxScores];
                 newMaxScores[index] = value;
                 setMaxScores(newMaxScores);
-                
+                const qKey = `q${index + 1}`;
                 if (value === 0) {
-                    setStudentsData(prev => prev.map(student => ({ ...student, [`q${index + 1}`]: 0 })));
+                    setStudentsData(prev => prev.map(student => ({ ...student, [qKey]: 0 })));
                 } else {
                     setStudentsData(prev => prev.map(student => {
-                        const currentScore = student[`q${index + 1}`];
-                        if (currentScore > value) {
-                            return { ...student, [`q${index + 1}`]: value };
-                        }
-                        return student;
+                        return student[qKey] > value ? { ...student, [qKey]: value } : student;
                     }));
                 }
             };
@@ -1147,9 +1042,7 @@
                 if (window.confirm("هل أنت متأكد من تصفير جميع درجات الطلاب؟ لا يمكن التراجع عن هذه الخطوة.")) {
                     setStudentsData(prev => prev.map(s => {
                         const newS = { ...s };
-                        for (let i = 1; i <= QUESTIONS_COUNT; i++) {
-                            newS[`q${i}`] = 0;
-                        }
+                        for (let i = 1; i <= QUESTIONS_COUNT; i++) { newS[`q${i}`] = 0; }
                         return newS;
                     }));
                 }
@@ -1159,27 +1052,31 @@
                 setStudentsData(prev => prev.map(s => {
                     const newS = { ...s };
                     const studentPerformance = Math.random(); 
-                    
                     for (let i = 1; i <= QUESTIONS_COUNT; i++) {
                         const qMax = maxScores[i - 1];
-                        
-                        if (qMax === 0) {
-                            newS[`q${i}`] = 0;
-                            continue;
-                        }
-
+                        if (qMax === 0) { newS[`q${i}`] = 0; continue; }
                         const scoreRatio = (studentPerformance * 0.7) + (Math.random() * 0.3);
                         let score = Math.round(scoreRatio * qMax);
                         score = Math.min(score, qMax); 
-                        
                         newS[`q${i}`] = score;
                     }
                     return newS;
                 }));
             };
 
+            const handleFormInputChange = (e, field) => {
+                setFormInputs(prev => ({ ...prev, [field]: e.target.value }));
+            };
+
+            const handleFormItemChange = (questionKey, field, value) => {
+                setFormInputs(prev => ({
+                    ...prev,
+                    items: { ...prev.items, [questionKey]: { ...(prev.items[questionKey] || {}), [field]: value } }
+                }));
+            };
+
             const handleExport = () => {
-                const dataStr = JSON.stringify({ studentsData, maxScores, examTitle, studentsCount });
+                const dataStr = JSON.stringify({ studentsData, maxScores, examTitle, studentsCount, formInputs });
                 const blob = new Blob([dataStr], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -1200,6 +1097,7 @@
                             setMaxScores(importedData.maxScores);
                             if (importedData.examTitle) setExamTitle(importedData.examTitle);
                             if (importedData.studentsCount) setStudentsCount(importedData.studentsCount);
+                            if (importedData.formInputs) setFormInputs(importedData.formInputs);
                             alert("تم استعادة البيانات بنجاح!");
                         } else {
                             alert("الملف غير صالح.");
@@ -1212,9 +1110,7 @@
                 reader.readAsText(file);
             };
 
-            const handlePrint = () => {
-                window.print();
-            };
+            const handlePrint = () => window.print();
 
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-right" dir="rtl">
@@ -1231,14 +1127,9 @@
                             </div>
 
                             <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-                                
                                 <div className="flex items-center gap-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
                                     <span className="text-xs text-slate-400 whitespace-nowrap pl-2">اختر الدرجة الكلية:</span>
-                                    <select 
-                                        onChange={(e) => handleTotalScoreChange(e.target.value)}
-                                        className="bg-slate-900 text-white text-sm font-bold rounded p-1 outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                        defaultValue=""
-                                    >
+                                    <select onChange={(e) => handleTotalScoreChange(e.target.value)} className="bg-slate-900 text-white text-sm font-bold rounded p-1 outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer" defaultValue="">
                                         <option value="" disabled>-- اختر --</option>
                                         <option value="60">60 درجة (60 مفردة)</option>
                                         <option value="40">40 درجة (40 مفردة)</option>
@@ -1254,34 +1145,17 @@
                                 </div>
                                 
                                 <div className="flex bg-slate-800 p-1 rounded-lg">
-                                    <button
-                                        onClick={() => setActiveTab('entry')}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${
-                                            activeTab === 'entry' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                                        }`}
-                                    >
-                                        <Icons.Table />
-                                        <span className="hidden sm:inline">إدخال الدرجات</span>
+                                    <button onClick={() => setActiveTab('entry')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'entry' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                                        <Icons.Table /><span className="hidden sm:inline">إدخال الدرجات</span>
                                     </button>
-                                    <button
-                                        onClick={() => setActiveTab('analysis')}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${
-                                            activeTab === 'analysis' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                                        }`}
-                                    >
-                                        <Icons.FileText />
-                                        <span className="hidden sm:inline">التقرير</span>
+                                    <button onClick={() => setActiveTab('analysis')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                                        <Icons.FileText /><span className="hidden sm:inline">التقرير</span>
                                     </button>
                                 </div>
 
                                 {activeTab === 'analysis' && (
-                                    <button
-                                        onClick={handlePrint}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
-                                        title="طباعة التقرير"
-                                    >
-                                        <Icons.Printer />
-                                        <span className="hidden md:inline">طباعة</span>
+                                    <button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors" title="طباعة التقرير">
+                                        <Icons.Printer /><span className="hidden md:inline">طباعة</span>
                                     </button>
                                 )}
                             </div>
@@ -1304,6 +1178,7 @@
                                 onStudentCountChange={setStudentsCount}
                                 onExport={handleExport}
                                 onImport={handleImport}
+                                onOpenFileManager={() => setIsFileManagerOpen(true)}
                             />
                         ) : (
                             <AnalysisDashboard 
@@ -1311,11 +1186,22 @@
                                 maxScores={maxScores} 
                                 totalScore={totalExamScore} 
                                 examTitle={examTitle}
+                                formInputs={formInputs}
+                                handleFormInputChange={handleFormInputChange}
+                                handleFormItemChange={handleFormItemChange}
                             />
                         )}
                     </main>
 
-                    {/* Footer - Credits */}
+                    <FileManagerModal 
+                        isOpen={isFileManagerOpen}
+                        onClose={() => setIsFileManagerOpen(false)}
+                        savedFiles={Object.keys(savedFiles)}
+                        onSave={handleSaveFile}
+                        onLoad={handleLoadFile}
+                        onDelete={handleDeleteFile}
+                    />
+
                     <footer className="bg-slate-900 border-t border-slate-800 p-4 mt-auto no-print">
                         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
                             <div className="text-slate-400 flex flex-col md:flex-row items-center gap-2 text-center md:text-right">
