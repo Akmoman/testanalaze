@@ -13,15 +13,15 @@
     <!-- تحميل مكتبة Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 1. تحميل React و ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <!-- 1. تحميل React و ReactDOM (v18) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
     <!-- 2. تحميل المكتبات المساعدة -->
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     
-    <!-- 3. تحميل Recharts -->
-    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <!-- 3. تحميل Recharts (نسخة 2.1.12 المستقرة للمتصفح) -->
+    <script src="https://unpkg.com/recharts@2.1.12/umd/Recharts.js"></script>
     
     <!-- 4. تحميل Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -51,7 +51,7 @@
             background: #94a3b8; 
         }
 
-        /* تنسيقات الطباعة */
+        /* تنسيقات الطباعة (A4) */
         @media print {
             @page { margin: 0.5cm; size: A4; }
             body { 
@@ -76,7 +76,10 @@
             }
             .print-border { border: 1px solid #000 !important; }
             
+            /* إصلاح عرض الرسوم البيانية في الطباعة */
+            .recharts-wrapper { width: 100% !important; height: auto !important; }
             .recharts-responsive-container { height: 300px !important; width: 100% !important; }
+            
             .shadow-sm, .shadow-lg { box-shadow: none !important; }
             .bg-slate-50, .bg-white { background-color: #fff !important; }
             .border { border-color: #000 !important; }
@@ -103,9 +106,10 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
         
+        // استدعاء Recharts
         const RechartsLib = window.Recharts || {};
         const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, ReferenceLine 
         } = RechartsLib;
 
         // --- أيقونات SVG ---
@@ -135,6 +139,7 @@
         };
 
         // --- ثوابت المحتوى (الدراسات الاجتماعية) ---
+        // تم تحديث المستويات المعرفية لتكون: المعرفة (تذكر)، الفهم والتطبيق، القدرات العليا
         const SOCIAL_STUDIES_CONTENT = {
             objectives: [
                 "تحديد المواقع الجغرافية على الخريطة بدقة.",
@@ -147,9 +152,9 @@
                 "استخدام الأدوات الجغرافية (الصور، الجداول) في التحليل."
             ],
             cognitive: [
-                "معرفة وتذكر",
-                "تطبيق",
-                "استدلال"
+                "المعرفة (تذكر)",
+                "الفهم والتطبيق",
+                "القدرات العليا"
             ],
             reasons: [
                 "ضعف في مهارة قراءة وتفسير الخرائط.",
