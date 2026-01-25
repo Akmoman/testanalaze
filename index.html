@@ -247,37 +247,36 @@
             </div>
         );
 
+        // --- FIXED: RenderField extracted outside of ItemAnalysisForm ---
+        // This prevents the input from losing focus on re-renders
+        const RenderField = ({ qKey, field, options, placeholder, value, onChange }) => {
+            return (
+                <div className="flex flex-col gap-1 h-full">
+                    <select 
+                        className="text-[10px] p-1 border rounded bg-slate-50 text-slate-500 no-print cursor-pointer hover:bg-slate-100"
+                        onChange={(e) => {
+                            if(e.target.value) onChange(qKey, field, e.target.value);
+                        }}
+                        value=""
+                    >
+                        <option value="" disabled>تعبئة سريعة...</option>
+                        {options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                    </select>
+                    <textarea 
+                        className="w-full h-full min-h-[60px] p-1 resize-none focus:outline-none focus:bg-blue-50 bg-transparent text-sm"
+                        placeholder={placeholder}
+                        value={value || ''}
+                        onChange={(e) => onChange(qKey, field, e.target.value)}
+                    />
+                </div>
+            );
+        };
+
         const ItemAnalysisForm = ({ hardestQuestions, formInputs, handleInputChange, handleItemChange }) => {
             const questionsToShow = useMemo(() => {
-                const difficultQuestions = hardestQuestions.filter(q => q.ease < 0.5);
-                if (difficultQuestions.length >= 5) {
-                    return difficultQuestions;
-                } else {
-                    return hardestQuestions.slice(0, 5);
-                }
+                // FIXED: Limit to strictly 5 hardest questions
+                return hardestQuestions.slice(0, 5);
             }, [hardestQuestions]);
-
-            const RenderField = ({ qKey, field, options, placeholder }) => {
-                const currentValue = formInputs.items[qKey]?.[field] || '';
-                return (
-                    <div className="flex flex-col gap-1 h-full">
-                        <select 
-                            className="text-[10px] p-1 border rounded bg-slate-50 text-slate-500 no-print cursor-pointer hover:bg-slate-100"
-                            onChange={(e) => { if(e.target.value) handleItemChange(qKey, field, e.target.value); }}
-                            value=""
-                        >
-                            <option value="" disabled>اختر...</option>
-                            {options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                        </select>
-                        <textarea 
-                            className="w-full h-full min-h-[60px] p-1 resize-none focus:outline-none focus:bg-blue-50 bg-transparent text-sm"
-                            placeholder={placeholder}
-                            value={currentValue}
-                            onChange={(e) => handleItemChange(qKey, field, e.target.value)}
-                        />
-                    </div>
-                );
-            };
 
             return (
                 <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-none print:mt-0 page-break">
@@ -288,15 +287,33 @@
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 print:grid-cols-3 print:gap-2 text-sm">
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-700 print:text-black">اسم المدرسة:</span>
-                            <input type="text" className="border-b border-slate-300 focus:outline-none w-full print:border-b-black print:border-b" value={formInputs.school} onChange={(e) => handleInputChange(e, 'school')} />
+                            <input 
+                                type="text" 
+                                className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black print:border-b"
+                                value={formInputs.school}
+                                onChange={(e) => handleInputChange(e, 'school')}
+                                placeholder="......................."
+                            />
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-700 print:text-black">المادة:</span>
-                            <input type="text" className="border-b border-slate-300 focus:outline-none w-full print:border-b-black print:border-b" value={formInputs.subject} onChange={(e) => handleInputChange(e, 'subject')} />
+                            <input 
+                                type="text" 
+                                className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black print:border-b"
+                                value={formInputs.subject}
+                                onChange={(e) => handleInputChange(e, 'subject')}
+                                placeholder="......................."
+                            />
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-700 print:text-black">الصف:</span>
-                            <input type="text" className="border-b border-slate-300 focus:outline-none w-full print:border-b-black print:border-b" value={formInputs.grade} onChange={(e) => handleInputChange(e, 'grade')} />
+                            <input 
+                                type="text" 
+                                className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black print:border-b"
+                                value={formInputs.grade}
+                                onChange={(e) => handleInputChange(e, 'grade')}
+                                placeholder="......................."
+                            />
                         </div>
                     </div>
 
@@ -306,24 +323,66 @@
                                 <tr>
                                     <th className="border border-slate-300 print:border-black p-2 w-16">رقم المفردة</th>
                                     <th className="border border-slate-300 print:border-black p-2 w-20">معامل الصعوبة</th>
-                                    <th className="border border-slate-300 print:border-black p-2">هدف السؤال</th>
+                                    <th className="border border-slate-300 print:border-black p-2">هدف السؤال (معيار الأداء)</th>
                                     <th className="border border-slate-300 print:border-black p-2 w-24">المستوى المعرفي</th>
-                                    <th className="border border-slate-300 print:border-black p-2">أسباب الصعوبة</th>
-                                    <th className="border border-slate-300 print:border-black p-2">الخطة العلاجية</th>
+                                    <th className="border border-slate-300 print:border-black p-2">أسباب الصعوبة المفترضة</th>
+                                    <th className="border border-slate-300 print:border-black p-2">الخطة العلاجية المقترحة</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {questionsToShow.map((q, idx) => (
                                     <tr key={idx} className="print:break-inside-avoid">
                                         <td className="border border-slate-300 print:border-black p-2 font-bold bg-slate-50 print:bg-transparent">{q.question}</td>
-                                        <td className="border border-slate-300 print:border-black p-2 text-red-600 font-bold print:text-black">{q.difficulty}</td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="objective" options={SOCIAL_STUDIES_CONTENT.objectives} placeholder="الهدف..." /></td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="cognitive" options={SOCIAL_STUDIES_CONTENT.cognitive} placeholder="المستوى..." /></td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="reason" options={SOCIAL_STUDIES_CONTENT.reasons} placeholder="السبب..." /></td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="plan" options={SOCIAL_STUDIES_CONTENT.plans} placeholder="الخطة..." /></td>
+                                        <td className="border border-slate-300 print:border-black p-2 text-red-600 font-bold print:text-black">
+                                            {q.difficulty}
+                                        </td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top">
+                                            <RenderField 
+                                                qKey={q.question} 
+                                                field="objective" 
+                                                options={SOCIAL_STUDIES_CONTENT.objectives}
+                                                placeholder="اكتب الهدف..."
+                                                value={formInputs.items[q.question]?.objective}
+                                                onChange={handleItemChange}
+                                            />
+                                        </td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top">
+                                            <RenderField 
+                                                qKey={q.question} 
+                                                field="cognitive" 
+                                                options={SOCIAL_STUDIES_CONTENT.cognitive}
+                                                placeholder="مستوى..."
+                                                value={formInputs.items[q.question]?.cognitive}
+                                                onChange={handleItemChange}
+                                            />
+                                        </td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top">
+                                            <RenderField 
+                                                qKey={q.question} 
+                                                field="reason" 
+                                                options={SOCIAL_STUDIES_CONTENT.reasons}
+                                                placeholder="السبب..."
+                                                value={formInputs.items[q.question]?.reason}
+                                                onChange={handleItemChange}
+                                            />
+                                        </td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top">
+                                            <RenderField 
+                                                qKey={q.question} 
+                                                field="plan" 
+                                                options={SOCIAL_STUDIES_CONTENT.plans}
+                                                placeholder="الخطة..."
+                                                value={formInputs.items[q.question]?.plan}
+                                                onChange={handleItemChange}
+                                            />
+                                        </td>
                                     </tr>
                                 ))}
-                                {questionsToShow.length === 0 && (<tr><td colSpan="6" className="p-8 text-center text-slate-400">لا توجد بيانات</td></tr>)}
+                                {questionsToShow.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" className="p-8 text-center text-slate-400">لا توجد بيانات مفردات لعرضها حالياً</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -760,15 +819,28 @@
                             <h3 className="text-lg font-bold text-slate-800 mb-4">تكرار الدرجات (فئات)</h3>
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.frequencyData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="range" fontSize={12} /><YAxis allowDecimals={false} /><Bar dataKey="count" name="عدد الطلاب" fill="#3B82F6" radius={[4, 4, 0, 0]}>{stats.frequencyData.map((entry, index) => (<Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3B82F6' : '#60A5FA'} />))}</Bar></BarChart>
+                                <BarChart data={stats.frequencyData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="range" fontSize={12} />
+                                    <YAxis allowDecimals={false} />
+                                    <Bar dataKey="count" name="عدد الطلاب" fill="#3B82F6" radius={[4, 4, 0, 0]}>
+                                    {stats.frequencyData.map((entry, index) => (<Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3B82F6' : '#60A5FA'} />))}
+                                    </Bar>
+                                </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
+
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
                             <h3 className="text-lg font-bold text-slate-800 mb-4">توزيع المستويات</h3>
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
-                                <PieChart><Pie data={stats.levelData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>{stats.levelData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}</Pie><Legend verticalAlign="bottom" height={36} /></PieChart>
+                                <PieChart>
+                                    <Pie data={stats.levelData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                    {stats.levelData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                                    </Pie>
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
