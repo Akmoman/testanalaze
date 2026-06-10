@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام تحليل نتائج الاختبارات - أ.عبدالله الرواحي</title>
+    <title>نظام تحليل نتائج الاختبارات - أ.عبدالله الرواحي (النسخة المطورة)</title>
     
     <!-- تهيئة بيئة العمل -->
     <script>
@@ -20,7 +20,7 @@
     <!-- 2. تحميل المكتبات المساعدة -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     
-    <!-- 3. تحميل Recharts (نسخة 2.1.12 المستقرة للمتصفح) -->
+    <!-- 3. تحميل Recharts -->
     <script src="https://unpkg.com/recharts@2.1.12/umd/Recharts.js"></script>
     
     <!-- 4. تحميل Babel -->
@@ -36,68 +36,87 @@
         }
 
         /* تخصيص شريط التمرير */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* تنسيقات الطباعة (A4) */
+        /* تنسيقات الجدول للعمود الثابت */
+        .sticky-col-1 { position: sticky; right: 0; z-index: 20; background-color: #f8fafc; }
+        .sticky-col-2 { position: sticky; right: 40px; z-index: 20; background-color: #ffffff; box-shadow: -2px 0 5px -2px rgba(0,0,0,0.1); }
+        
+        .thead-sticky-col-1 { position: sticky; right: 0; z-index: 30; background-color: #f1f5f9; }
+        .thead-sticky-col-2 { position: sticky; right: 40px; z-index: 30; background-color: #f1f5f9; box-shadow: -2px 0 5px -2px rgba(0,0,0,0.1); }
+
+        /* ======== التنسيقات الشاملة للطباعة (A4) ======== */
         @media print {
-            @page { margin: 0.5cm; size: A4; }
-            body { 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                background: white; 
-                font-size: 12px;
+            @page { margin: 10mm; size: A4 portrait; }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
-            .no-print { display: none !important; }
-            .print-break-avoid { break-inside: avoid; page-break-inside: avoid; }
-            .page-break { page-break-before: always; }
-            header, button, input[type="number"], select, footer, .tabs-nav { display: none !important; }
-            h1 { display: block !important; }
-            .no-print-container { display: none !important; }
-            
-            input[type="text"], textarea {
-                border: none !important;
-                background: transparent !important;
-                resize: none;
-                padding: 0;
-                font-family: inherit;
+            body, html { 
+                background: white !important; 
+                font-size: 11pt !important;
+                color: #000 !important;
+                height: 100% !important;
             }
-            .print-border { border: 1px solid #000 !important; }
             
-            /* إصلاح عرض الرسوم البيانية في الطباعة */
+            /* إلغاء الاقتطاع والاختفاء للأقسام */
+            body, main, div, table, tbody, tr, td, th, .overflow-x-auto, .overflow-auto {
+                overflow: visible !important;
+            }
+
+            /* إخفاء واجهات الاستخدام والأزرار */
+            header, footer, button, .no-print, input[type="file"], select, .tabs-nav { 
+                display: none !important; 
+            }
+            
+            /* فواصل الصفحات لمنع قسمة الجداول أو الرسومات */
+            .print-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
+            .page-break { page-break-before: always !important; }
+            h1, h2, h3 { color: #000 !important; page-break-after: avoid !important; }
+            
+            /* تنسيق حقول النصوص لضمان ظهور النص كاملاً */
+            input[type="text"], textarea { 
+                border: none !important; 
+                background: transparent !important; 
+                resize: none !important; 
+                padding: 0 !important; 
+                font-family: inherit !important; 
+                overflow: hidden !important; 
+                white-space: pre-wrap !important;
+                word-wrap: break-word !important;
+                color: #000 !important;
+                height: auto !important;
+            }
+
+            /* تنسيق الجداول لتناسب عرض A4 */
+            table { 
+                border-collapse: collapse !important; 
+                width: 100% !important; 
+                table-layout: fixed !important; /* يجبر الجدول على البقاء ضمن العرض المتاح */
+            }
+            th, td { 
+                border: 1px solid #000 !important; 
+                padding: 6px !important; 
+                word-wrap: break-word !important; /* يكسر الكلمات الطويلة */
+            }
+            th { background-color: #f1f5f9 !important; font-weight: bold !important; color: #000 !important; }
+            
+            /* تنسيق الرسوم البيانية */
             .recharts-wrapper { width: 100% !important; height: auto !important; }
-            .recharts-responsive-container { height: 300px !important; width: 100% !important; }
+            .recharts-responsive-container { height: 260px !important; width: 100% !important; }
             
-            .shadow-sm, .shadow-lg { box-shadow: none !important; }
-            .bg-slate-50, .bg-white { background-color: #fff !important; }
-            .border { border-color: #000 !important; }
+            /* إزالة الظلال والحدود الخفيفة الخاصة بالشاشة */
+            .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { box-shadow: none !important; }
+            .border-slate-200 { border-color: #000 !important; border-width: 1px !important; }
+            .bg-white { background-color: #fff !important; }
+            
+            .no-print-container { display: none !important; }
         }
 
-        /* Modal Styles */
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 50; }
     </style>
 </head>
 <body>
@@ -106,11 +125,8 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
         
-        // استدعاء Recharts
         const RechartsLib = window.Recharts || {};
-        const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, ReferenceLine 
-        } = RechartsLib;
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } = RechartsLib;
 
         // --- أيقونات SVG ---
         const Icons = {
@@ -121,63 +137,33 @@
             FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
             Printer: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>,
             TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
-            Activity: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
             Award: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>,
             Sigma: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 7V4H6l6 8-6 8h12v-3"/></svg>,
-            AlertTriangle: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
-            CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>,
             ArrowUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>,
             PenLine: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>,
             Users: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-            Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
             Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
             Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
             Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
             Folder: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
-            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            SortAsc: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 11h6"/><path d="M11 15h4"/><path d="M11 19h2"/><path d="M11 7h8"/><path d="M5 19V5l-3 3"/><path d="m8 8-3-3"/></svg>,
+            FileSpreadsheet: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>
         };
 
         const SOCIAL_STUDIES_CONTENT = {
-            objectives: [
-                "تحديد المواقع الجغرافية على الخريطة بدقة.",
-                "تفسير الظواهر الطبيعية والبشرية.",
-                "مقارنة الأحداث التاريخية واستنتاج العبر.",
-                "تحليل النصوص والوثائق التاريخية.",
-                "استنتاج العلاقة بين البيئة وأنشطة الإنسان.",
-                "تطبيق المفاهيم الجغرافية على مواقف حياتية.",
-                "تقدير دور الشخصيات العمانية في التاريخ.",
-                "استخدام الأدوات الجغرافية (الصور، الجداول) في التحليل."
-            ],
-            cognitive: [
-                "المعرفة (تذكر)",
-                "الفهم والتطبيق",
-                "القدرات العليا"
-            ],
-            reasons: [
-                "ضعف في مهارة قراءة وتفسير الخرائط.",
-                "الخلط بين المفاهيم والمصطلحات المتشابهة.",
-                "صعوبة في ربط الأحداث التاريخية بالتسلسل الزمني.",
-                "الاعتماد على الحفظ دون الفهم والاستيعاب.",
-                "ضعف في القدرة على استنتاج العلاقات السببية.",
-                "عدم التركيز في قراءة المطلوب من السؤال.",
-                "صعوبة التعامل مع الرسوم البيانية والجداول الإحصائية."
-            ],
-            plans: [
-                "تكثيف التدريبات العملية على قراءة ورسم الخرائط.",
-                "استخدام خرائط المفاهيم لتوضيح العلاقات بين المصطلحات.",
-                "تصميم خطوط زمنية (Timelines) لترتيب الأحداث.",
-                "تفعيل استراتيجيات التعلم النشط (الحوار، المناقشة).",
-                "تدريب الطلاب على تحليل الأسئلة واستخراج المعطيات.",
-                "عرض نماذج لأسئلة مشابهة وحلها جماعياً.",
-                "استخدام الوسائل البصرية (صور، فيديوهات) لتبسيط المفاهيم."
-            ]
+            objectives: ["تحديد المواقع الجغرافية على الخريطة بدقة.", "تفسير الظواهر الطبيعية والبشرية.", "مقارنة الأحداث التاريخية واستنتاج العبر.", "تحليل النصوص والوثائق التاريخية.", "استنتاج العلاقة بين البيئة وأنشطة الإنسان.", "تطبيق المفاهيم الجغرافية على مواقف حياتية.", "تقدير دور الشخصيات العمانية في التاريخ.", "استخدام الأدوات الجغرافية (الصور، الجداول) في التحليل."],
+            cognitive: ["المعرفة (تذكر)", "الفهم والتطبيق", "القدرات العليا"],
+            reasons: ["ضعف في مهارة قراءة وتفسير الخرائط.", "الخلط بين المفاهيم والمصطلحات المتشابهة.", "صعوبة في ربط الأحداث التاريخية بالتسلسل الزمني.", "الاعتماد على الحفظ دون الفهم والاستيعاب.", "ضعف في القدرة على استنتاج العلاقات السببية.", "عدم التركيز في قراءة المطلوب من السؤال.", "صعوبة التعامل مع الرسوم البيانية والجداول الإحصائية."],
+            plans: ["تكثيف التدريبات العملية على قراءة ورسم الخرائط.", "استخدام خرائط المفاهيم لتوضيح العلاقات بين المصطلحات.", "تصميم خطوط زمنية (Timelines) لترتيب الأحداث.", "تفعيل استراتيجيات التعلم النشط (الحوار، المناقشة).", "تدريب الطلاب على تحليل الأسئلة واستخراج المعطيات.", "عرض نماذج لأسئلة مشابهة وحلها جماعياً.", "استخدام الوسائل البصرية (صور، فيديوهات) لتبسيط المفاهيم."]
         };
 
         const DEFAULT_STUDENTS_COUNT = 100;
         const QUESTIONS_COUNT = 60; 
 
-        // --- Helper Functions ---
+        // --- الدوال المساعدة ---
         const getGradeLevel = (score, totalScore) => {
             if (totalScore === 0) return { label: '-', color: 'bg-slate-100 text-slate-500', chartColor: '#cbd5e1' };
             const percentage = (score / totalScore) * 100;
@@ -205,9 +191,7 @@
                 if (frequency[v] > maxFreq) maxFreq = frequency[v];
             });
             if (maxFreq === 1) return 'لا يوجد';
-            for (const key in frequency) {
-                if (frequency[key] === maxFreq) modes.push(key);
-            }
+            for (const key in frequency) { if (frequency[key] === maxFreq) modes.push(key); }
             return modes.length > 3 ? 'متعدد' : modes.join(', ');
         };
 
@@ -221,173 +205,111 @@
         const generateInitialData = (count) => {
             return Array.from({ length: count }, (_, i) => {
                 const student = { id: i + 1, name: `طالب ${i + 1}` };
-                for (let q = 1; q <= QUESTIONS_COUNT; q++) {
-                    student[`q${q}`] = 0;
-                }
+                for (let q = 1; q <= QUESTIONS_COUNT; q++) { student[`q${q}`] = 0; }
                 return student;
             });
         };
 
         const initialMaxScores = Array(QUESTIONS_COUNT).fill(1); 
 
-        // --- Components ---
-
+        // --- المكونات ---
         const StatCard = ({ title, value, subtext, color, icon: Icon }) => (
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print-break-avoid print:border-black print:border">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print-break-avoid">
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-sm font-medium text-slate-500 print:text-black">{title}</p>
                         <h3 className="text-2xl font-bold text-slate-800 mt-1 print:text-black">{value}</h3>
                     </div>
-                    <div className={`p-2 rounded-lg ${color} text-white print:text-black print:bg-transparent`}>
-                        <Icon />
-                    </div>
+                    <div className={`p-2 rounded-lg ${color} text-white print:text-black print:bg-transparent`}><Icon /></div>
                 </div>
                 {subtext && <p className="text-xs text-slate-400 mt-2 print:text-gray-600">{subtext}</p>}
             </div>
         );
 
-        // --- FIXED: RenderField extracted outside of ItemAnalysisForm ---
-        // This prevents the input from losing focus on re-renders
         const RenderField = ({ qKey, field, options, placeholder, value, onChange }) => {
+            const textareaRef = useRef(null);
+
+            // تمديد الحقل تلقائياً بناءً على النص (في الشاشة)
+            const resizeTextarea = () => {
+                if (textareaRef.current) {
+                    textareaRef.current.style.height = 'auto';
+                    textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+                }
+            };
+
+            useEffect(() => {
+                resizeTextarea();
+            }, [value]);
+
             return (
                 <div className="flex flex-col gap-1 h-full">
                     <select 
                         className="text-[10px] p-1 border rounded bg-slate-50 text-slate-500 no-print cursor-pointer hover:bg-slate-100"
-                        onChange={(e) => {
-                            if(e.target.value) onChange(qKey, field, e.target.value);
-                        }}
+                        onChange={(e) => { if(e.target.value) onChange(qKey, field, e.target.value); }}
                         value=""
                     >
                         <option value="" disabled>تعبئة سريعة...</option>
                         {options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
+                    {/* هذا المربع يظهر في الشاشة فقط للتحرير */}
                     <textarea 
-                        className="w-full h-full min-h-[60px] p-1 resize-none focus:outline-none focus:bg-blue-50 bg-transparent text-sm"
-                        placeholder={placeholder}
-                        value={value || ''}
+                        ref={textareaRef}
+                        className="w-full min-h-[60px] p-1 resize-none focus:outline-none focus:bg-blue-50 bg-transparent text-sm overflow-hidden print:hidden"
+                        placeholder={placeholder} value={value || ''}
                         onChange={(e) => onChange(qKey, field, e.target.value)}
                     />
+                    {/* هذا العنصر يظهر في الطباعة فقط لضمان ظهور النص كاملاً كفقرة */}
+                    <div className="hidden print:block w-full text-sm whitespace-pre-wrap break-words text-right p-1 min-h-[60px]">
+                        {value || ''}
+                    </div>
                 </div>
             );
         };
 
         const ItemAnalysisForm = ({ hardestQuestions, formInputs, handleInputChange, handleItemChange }) => {
-            const questionsToShow = useMemo(() => {
-                // FIXED: Limit to strictly 5 hardest questions
-                return hardestQuestions.slice(0, 5);
-            }, [hardestQuestions]);
+            const questionsToShow = useMemo(() => hardestQuestions.slice(0, 5), [hardestQuestions]);
 
             return (
-                <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-none print:mt-0 page-break">
+                <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200 print-break-avoid page-break">
                     <h2 className="text-2xl font-bold text-center mb-6 text-slate-800 print:text-black border-b pb-2">
                         استمارة تفريغ تحليل أداء الطلاب في مفردات الورقة الامتحانية
                     </h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 print:grid-cols-3 print:gap-2 text-sm">
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-700 print:text-black">اسم المدرسة:</span>
-                            <input 
-                                type="text" 
-                                className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black print:border-b"
-                                value={formInputs.school}
-                                onChange={(e) => handleInputChange(e, 'school')}
-                                placeholder="......................."
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-700 print:text-black">المادة:</span>
-                            <input 
-                                type="text" 
-                                className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black print:border-b"
-                                value={formInputs.subject}
-                                onChange={(e) => handleInputChange(e, 'subject')}
-                                placeholder="......................."
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-700 print:text-black">الصف:</span>
-                            <input 
-                                type="text" 
-                                className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black print:border-b"
-                                value={formInputs.grade}
-                                onChange={(e) => handleInputChange(e, 'grade')}
-                                placeholder="......................."
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 print:grid-cols-3 print:gap-4 text-sm">
+                        <div className="flex items-center gap-2"><span className="font-bold text-slate-700 print:text-black">اسم المدرسة:</span><input type="text" className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black" value={formInputs.school} onChange={(e) => handleInputChange(e, 'school')} placeholder="......................." /></div>
+                        <div className="flex items-center gap-2"><span className="font-bold text-slate-700 print:text-black">المادة:</span><input type="text" className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black" value={formInputs.subject} onChange={(e) => handleInputChange(e, 'subject')} placeholder="......................." /></div>
+                        <div className="flex items-center gap-2"><span className="font-bold text-slate-700 print:text-black">الصف:</span><input type="text" className="border-b border-slate-300 focus:outline-none focus:border-blue-500 px-2 py-1 w-full print:border-b-black" value={formInputs.grade} onChange={(e) => handleInputChange(e, 'grade')} placeholder="......................." /></div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse border border-slate-300 print:border-black text-sm text-center">
+                    <div className="w-full">
+                        {/* استخدام table-fixed لمنع تجاوز الجدول للصفحة */}
+                        <table className="w-full border-collapse border border-slate-300 print:border-black text-sm text-center print:table-fixed">
                             <thead className="bg-slate-50 print:bg-gray-100 text-slate-800 font-bold">
                                 <tr>
-                                    <th className="border border-slate-300 print:border-black p-2 w-16">رقم المفردة</th>
-                                    <th className="border border-slate-300 print:border-black p-2 w-20">معامل الصعوبة</th>
-                                    <th className="border border-slate-300 print:border-black p-2">هدف السؤال (معيار الأداء)</th>
-                                    <th className="border border-slate-300 print:border-black p-2 w-24">المستوى المعرفي</th>
-                                    <th className="border border-slate-300 print:border-black p-2">أسباب الصعوبة المفترضة</th>
-                                    <th className="border border-slate-300 print:border-black p-2">الخطة العلاجية المقترحة</th>
+                                    <th className="border border-slate-300 print:border-black p-2 w-12 print:w-[8%]">المفردة</th>
+                                    <th className="border border-slate-300 print:border-black p-2 w-16 print:w-[10%]">الصعوبة</th>
+                                    <th className="border border-slate-300 print:border-black p-2 print:w-[22%]">هدف السؤال (معيار الأداء)</th>
+                                    <th className="border border-slate-300 print:border-black p-2 w-24 print:w-[15%]">المستوى المعرفي</th>
+                                    <th className="border border-slate-300 print:border-black p-2 print:w-[22%]">أسباب الصعوبة المفترضة</th>
+                                    <th className="border border-slate-300 print:border-black p-2 print:w-[23%]">الخطة العلاجية المقترحة</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {questionsToShow.map((q, idx) => (
-                                    <tr key={idx} className="print:break-inside-avoid">
-                                        <td className="border border-slate-300 print:border-black p-2 font-bold bg-slate-50 print:bg-transparent">{q.question}</td>
-                                        <td className="border border-slate-300 print:border-black p-2 text-red-600 font-bold print:text-black">
-                                            {q.difficulty}
-                                        </td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="objective" 
-                                                options={SOCIAL_STUDIES_CONTENT.objectives}
-                                                placeholder="اكتب الهدف..."
-                                                value={formInputs.items[q.question]?.objective}
-                                                onChange={handleItemChange}
-                                            />
-                                        </td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="cognitive" 
-                                                options={SOCIAL_STUDIES_CONTENT.cognitive}
-                                                placeholder="مستوى..."
-                                                value={formInputs.items[q.question]?.cognitive}
-                                                onChange={handleItemChange}
-                                            />
-                                        </td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="reason" 
-                                                options={SOCIAL_STUDIES_CONTENT.reasons}
-                                                placeholder="السبب..."
-                                                value={formInputs.items[q.question]?.reason}
-                                                onChange={handleItemChange}
-                                            />
-                                        </td>
-                                        <td className="border border-slate-300 print:border-black p-1 align-top">
-                                            <RenderField 
-                                                qKey={q.question} 
-                                                field="plan" 
-                                                options={SOCIAL_STUDIES_CONTENT.plans}
-                                                placeholder="الخطة..."
-                                                value={formInputs.items[q.question]?.plan}
-                                                onChange={handleItemChange}
-                                            />
-                                        </td>
+                                    <tr key={idx} className="print-break-avoid">
+                                        <td className="border border-slate-300 print:border-black p-2 font-bold bg-slate-50 print:bg-transparent align-top">{q.question}</td>
+                                        <td className="border border-slate-300 print:border-black p-2 text-red-600 font-bold print:text-black align-top">{q.difficulty}</td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="objective" options={SOCIAL_STUDIES_CONTENT.objectives} placeholder="اكتب الهدف..." value={formInputs.items[q.question]?.objective} onChange={handleItemChange} /></td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="cognitive" options={SOCIAL_STUDIES_CONTENT.cognitive} placeholder="مستوى..." value={formInputs.items[q.question]?.cognitive} onChange={handleItemChange} /></td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="reason" options={SOCIAL_STUDIES_CONTENT.reasons} placeholder="السبب..." value={formInputs.items[q.question]?.reason} onChange={handleItemChange} /></td>
+                                        <td className="border border-slate-300 print:border-black p-1 align-top"><RenderField qKey={q.question} field="plan" options={SOCIAL_STUDIES_CONTENT.plans} placeholder="الخطة..." value={formInputs.items[q.question]?.plan} onChange={handleItemChange} /></td>
                                     </tr>
                                 ))}
-                                {questionsToShow.length === 0 && (
-                                    <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-400">لا توجد بيانات مفردات لعرضها حالياً</td>
-                                    </tr>
-                                )}
+                                {questionsToShow.length === 0 && (<tr><td colSpan="6" className="p-8 text-center text-slate-400">لا توجد بيانات مفردات لعرضها حالياً</td></tr>)}
                             </tbody>
                         </table>
                     </div>
-                    
-                    <div className="mt-8 flex justify-between text-sm print:flex">
+                    <div className="mt-8 flex justify-between text-sm print:flex print-break-avoid">
                         <div className="font-bold">تاريخ التحليل: {formInputs.date}</div>
                         <div className="font-bold">يعتمد، مدير المدرسة: ..............................</div>
                     </div>
@@ -395,62 +317,28 @@
             );
         };
 
-        // --- NEW: Statistics Tables Component ---
         const StatisticsTables = ({ stats, totalScore }) => {
             return (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print:gap-4 mb-6 print:break-inside-avoid">
-                    {/* General Stats Table */}
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print:border-black print:border">
-                        <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2 flex items-center gap-2 print:text-black">
-                             جدول المؤشرات العامة
-                        </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print:gap-4 mb-6 print-break-avoid">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2 flex items-center gap-2 print:text-black">جدول المؤشرات العامة</h3>
                         <table className="w-full text-sm text-center border-collapse">
                             <tbody>
-                                <tr className="border-b border-slate-100 print:border-gray-300">
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 w-1/2 text-right pr-4">عدد الطلاب (المحلل)</td>
-                                    <td className="p-2 text-blue-700 font-bold print:text-black">{stats.actualStudentCount}</td>
-                                </tr>
-                                <tr className="border-b border-slate-100 print:border-gray-300">
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 text-right pr-4">الدرجة الكلية</td>
-                                    <td className="p-2 text-slate-700 print:text-black">{totalScore}</td>
-                                </tr>
-                                <tr className="border-b border-slate-100 print:border-gray-300">
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 text-right pr-4">المتوسط الحسابي</td>
-                                    <td className="p-2 text-slate-700 print:text-black">{stats.avgTotal}</td>
-                                </tr>
-                                <tr className="border-b border-slate-100 print:border-gray-300">
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 text-right pr-4">أعلى درجة</td>
-                                    <td className="p-2 text-green-600 font-bold print:text-black">{stats.maxScore}</td>
-                                </tr>
-                                <tr className="border-b border-slate-100 print:border-gray-300">
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 text-right pr-4">أدنى درجة</td>
-                                    <td className="p-2 text-red-600 font-bold print:text-black">{stats.minScore}</td>
-                                </tr>
-                                <tr className="border-b border-slate-100 print:border-gray-300">
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 text-right pr-4">نسبة النجاح</td>
-                                    <td className="p-2 text-blue-600 font-bold print:text-black">{stats.passRate}%</td>
-                                </tr>
-                                <tr>
-                                    <td className="p-2 font-bold bg-slate-50 print:bg-gray-100 text-right pr-4">نسبة الإتقان</td>
-                                    <td className="p-2 text-yellow-600 font-bold print:text-black">{stats.masteryRate}%</td>
-                                </tr>
+                                <tr className="border-b border-slate-100 print:border-gray-300"><td className="p-2 font-bold bg-slate-50 w-1/2 text-right pr-4">عدد الطلاب (المحلل)</td><td className="p-2 text-blue-700 font-bold print:text-black">{stats.actualStudentCount}</td></tr>
+                                <tr className="border-b border-slate-100 print:border-gray-300"><td className="p-2 font-bold bg-slate-50 text-right pr-4">الدرجة الكلية</td><td className="p-2 text-slate-700 print:text-black">{totalScore}</td></tr>
+                                <tr className="border-b border-slate-100 print:border-gray-300"><td className="p-2 font-bold bg-slate-50 text-right pr-4">المتوسط الحسابي</td><td className="p-2 text-slate-700 print:text-black">{stats.avgTotal}</td></tr>
+                                <tr className="border-b border-slate-100 print:border-gray-300"><td className="p-2 font-bold bg-slate-50 text-right pr-4">أعلى درجة</td><td className="p-2 text-green-600 font-bold print:text-black">{stats.maxScore}</td></tr>
+                                <tr className="border-b border-slate-100 print:border-gray-300"><td className="p-2 font-bold bg-slate-50 text-right pr-4">أدنى درجة</td><td className="p-2 text-red-600 font-bold print:text-black">{stats.minScore}</td></tr>
+                                <tr className="border-b border-slate-100 print:border-gray-300"><td className="p-2 font-bold bg-slate-50 text-right pr-4">نسبة النجاح</td><td className="p-2 text-blue-600 font-bold print:text-black">{stats.passRate}%</td></tr>
+                                <tr><td className="p-2 font-bold bg-slate-50 text-right pr-4">نسبة الإتقان</td><td className="p-2 text-yellow-600 font-bold print:text-black">{stats.masteryRate}%</td></tr>
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Levels Distribution Table */}
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 print:border-black print:border">
-                        <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2 flex items-center gap-2 print:text-black">
-                             جدول توزيع مستويات التحصيل
-                        </h3>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2 flex items-center gap-2 print:text-black">جدول توزيع مستويات التحصيل</h3>
                         <table className="w-full text-sm text-center border-collapse">
-                            <thead className="bg-slate-50 print:bg-gray-100 text-slate-700 font-bold">
-                                <tr>
-                                    <th className="p-2 border-b print:border-gray-300">المستوى</th>
-                                    <th className="p-2 border-b print:border-gray-300">النطاق</th>
-                                    <th className="p-2 border-b print:border-gray-300">العدد</th>
-                                    <th className="p-2 border-b print:border-gray-300">النسبة</th>
-                                </tr>
+                            <thead className="bg-slate-50 text-slate-700 font-bold">
+                                <tr><th className="p-2 border-b print:border-gray-300">المستوى</th><th className="p-2 border-b print:border-gray-300">النطاق</th><th className="p-2 border-b print:border-gray-300">العدد</th><th className="p-2 border-b print:border-gray-300">النسبة</th></tr>
                             </thead>
                             <tbody>
                                 {stats.levelData.map((level, idx) => (
@@ -461,9 +349,7 @@
                                         <td className="p-2 text-slate-600 print:text-black">{stats.actualStudentCount > 0 ? ((level.value / stats.actualStudentCount) * 100).toFixed(1) : 0}%</td>
                                     </tr>
                                 ))}
-                                {stats.levelData.length === 0 && (
-                                    <tr><td colSpan="4" className="p-4 text-slate-400">لا توجد بيانات</td></tr>
-                                )}
+                                {stats.levelData.length === 0 && (<tr><td colSpan="4" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}
                             </tbody>
                         </table>
                     </div>
@@ -474,9 +360,11 @@
         const DataEntryView = ({ 
             data, maxScores, onUpdateData, onUpdateMaxScore, onRandomize, onReset, 
             totalScore, examTitle, setExamTitle, studentCount, onStudentCountChange,
-            onExport, onImport, onOpenFileManager
+            onExportJSON, onExportCSV, onImport, onOpenFileManager, stats
         }) => {
             const fileInputRef = useRef(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
             const handleScoreChange = (studentId, questionIndex, value) => {
                 const qKey = `q${questionIndex + 1}`;
@@ -494,97 +382,83 @@
                 }
             };
 
-            const handleMaxScoreChange = (index, value) => {
-                const newValue = Math.max(0, parseFloat(value) || 0);
-                onUpdateMaxScore(index, newValue);
-            };
+            const displayData = useMemo(() => {
+                let filteredData = data.filter(student => student.name.includes(searchTerm));
+                
+                if (sortConfig.key) {
+                    filteredData.sort((a, b) => {
+                        let aVal, bVal;
+                        if (sortConfig.key === 'name') {
+                            aVal = a.name; bVal = b.name;
+                        } else if (sortConfig.key === 'total') {
+                            aVal = Array.from({ length: QUESTIONS_COUNT }, (_, i) => a[`q${i + 1}`]).reduce((sum, val) => sum + val, 0);
+                            bVal = Array.from({ length: QUESTIONS_COUNT }, (_, i) => b[`q${i + 1}`]).reduce((sum, val) => sum + val, 0);
+                        }
+                        
+                        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                return filteredData;
+            }, [data, searchTerm, sortConfig]);
 
-            const handleNameChange = (studentId, value) => {
-                onUpdateData(studentId, 'name', value);
-            };
-
-            const triggerFileUpload = () => fileInputRef.current.click();
-            const handleFileChange = (e) => {
-                const file = e.target.files[0];
-                if (file) onImport(file);
-                e.target.value = null;
+            const handleSort = (key) => {
+                let direction = 'asc';
+                if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+                setSortConfig({ key, direction });
             };
 
             return (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-[calc(100vh-220px)] animate-fade-in no-print-container">
-                    <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50 rounded-t-xl gap-4 no-print">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1 group">
-                                <input 
-                                    type="text" 
-                                    value={examTitle}
-                                    onChange={(e) => setExamTitle(e.target.value)}
-                                    className="font-bold text-slate-800 text-lg border-b border-dashed border-transparent hover:border-blue-400 focus:border-blue-600 focus:outline-none bg-transparent transition-colors w-full md:w-auto"
-                                    placeholder="انقر هنا لكتابة اسم الاختبار أو الصف..."
-                                />
+                    <div className="p-4 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center bg-slate-50 rounded-t-xl gap-4 no-print">
+                        <div className="flex-1 w-full lg:w-auto">
+                            <div className="flex items-center gap-2 mb-2 group">
+                                <input type="text" value={examTitle} onChange={(e) => setExamTitle(e.target.value)} className="font-bold text-slate-800 text-lg border-b border-dashed border-transparent hover:border-blue-400 focus:border-blue-600 focus:outline-none bg-transparent transition-colors w-full md:w-auto" placeholder="انقر هنا لكتابة اسم الاختبار أو الصف..." />
                                 <Icons.PenLine className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            
-                            <div className="flex items-center gap-4 mt-2">
-                                <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    <Icons.Table />
-                                    جدول رصد الدرجات - قم بتعديل الدرجات العظمى في الصف الأول.
-                                </p>
-                                <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-md">
-                                    <Icons.Users className="w-3 h-3 text-slate-500" />
-                                    <span className="text-xs text-slate-500">عدد الطلاب:</span>
-                                    <input 
-                                        type="number" 
-                                        min="1" 
-                                        max="200"
-                                        value={studentCount}
-                                        onChange={(e) => onStudentCountChange(parseInt(e.target.value) || 1)}
-                                        className="w-12 bg-white text-center text-xs border border-slate-300 rounded focus:outline-none focus:border-blue-500"
-                                    />
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="relative">
+                                    <input type="text" placeholder="بحث عن طالب..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="text-sm border border-slate-300 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-blue-500 w-48" />
+                                    <div className="absolute right-2 top-2 text-slate-400"><Icons.Search /></div>
+                                </div>
+                                <div className="flex items-center gap-2 bg-slate-200 px-2 py-1.5 rounded-lg border border-slate-300">
+                                    <Icons.Users className="w-4 h-4 text-slate-600" />
+                                    <span className="text-xs font-bold text-slate-600">العدد:</span>
+                                    <input type="number" min="1" max="200" value={studentCount} onChange={(e) => onStudentCountChange(parseInt(e.target.value) || 1)} className="w-12 bg-white text-center text-xs font-bold border border-slate-300 rounded focus:outline-none focus:border-blue-500" />
+                                </div>
+                                <div className="text-xs text-slate-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 flex gap-4">
+                                    <span>المتوسط: <b>{stats.avgTotal}</b></span>
+                                    <span>النجاح: <b className={stats.passRate >= 50 ? 'text-green-600' : 'text-red-600'}>{stats.passRate}%</b></span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg text-sm font-bold border border-blue-200 whitespace-nowrap">
-                                المجموع الحالي: {totalScore}
-                            </div>
-                            
-                            <button onClick={onOpenFileManager} className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-slate-700 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap" title="إدارة الملفات المحفوظة">
-                                <Icons.Folder /> ملفات محفوظة
-                            </button>
-
-                            <button onClick={onExport} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap" title="تصدير كملف">
-                                <Icons.Download /> تصدير
-                            </button>
-
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
-                            <button onClick={triggerFileUpload} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap" title="استيراد ملف">
-                                <Icons.Upload /> استيراد
-                            </button>
-
-                            <button onClick={onReset} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 rounded-lg transition-colors whitespace-nowrap" title="مسح جميع البيانات">
-                                <Icons.Trash2 /> تصفير
-                            </button>
-
-                            <button onClick={onRandomize} className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap">
-                                <Icons.RefreshCw /> بيانات تجريبية
-                            </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button onClick={onOpenFileManager} className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-slate-700 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap"><Icons.Folder /> المحفوظات</button>
+                            <button onClick={onExportCSV} className="flex items-center gap-2 px-3 py-1.5 text-sm text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 rounded-lg transition-colors whitespace-nowrap" title="تصدير لملف Excel"><Icons.FileSpreadsheet /> Excel</button>
+                            <button onClick={onExportJSON} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap" title="تصدير كملف احتياطي"><Icons.Download /> تصدير نسخة</button>
+                            <input type="file" ref={fileInputRef} onChange={(e) => { if(e.target.files[0]) onImport(e.target.files[0]); e.target.value=null; }} accept=".json" className="hidden" />
+                            <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap" title="استيراد ملف احتياطي"><Icons.Upload /> استيراد نسخة</button>
+                            <button onClick={onReset} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 hover:border-red-200 rounded-lg transition-colors whitespace-nowrap"><Icons.Trash2 /> تصفير</button>
+                            <button onClick={onRandomize} className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"><Icons.RefreshCw /> بيانات تجريبية</button>
                         </div>
                     </div>
                     
                     <div className="flex-1 overflow-auto">
-                        <table className="w-full text-center border-collapse">
-                            <thead className="bg-slate-100 sticky top-0 z-20 shadow-sm">
+                        <table className="w-full text-center border-collapse whitespace-nowrap">
+                            <thead>
                                 <tr>
-                                    <th rowSpan="2" className="p-3 text-xs font-bold text-slate-600 border-b border-r bg-slate-100 min-w-[50px] z-20 sticky right-0">#</th>
-                                    <th rowSpan="2" className="p-3 text-xs font-bold text-slate-600 border-b min-w-[160px] text-right bg-slate-100 z-20 sticky right-[50px]">اسم الطالب</th>
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-slate-600 border-b border-r thead-sticky-col-1 min-w-[40px]">#</th>
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-slate-600 border-b thead-sticky-col-2 min-w-[160px] cursor-pointer hover:bg-slate-200" onClick={() => handleSort('name')}>
+                                        <div className="flex items-center justify-between">اسم الطالب {sortConfig.key === 'name' && <Icons.SortAsc />}</div>
+                                    </th>
                                     {Array.from({ length: QUESTIONS_COUNT }, (_, i) => (
-                                        <th key={i} className={`p-2 text-xs font-bold border-b border-l min-w-[60px] ${maxScores[i] === 0 ? 'bg-slate-200 text-slate-400' : 'bg-blue-50/50 text-blue-700'}`}>
-                                            م{i + 1}
-                                        </th>
+                                        <th key={i} className={`p-2 text-xs font-bold border-b border-l min-w-[60px] ${maxScores[i] === 0 ? 'bg-slate-200 text-slate-400' : 'bg-blue-50/50 text-blue-700'}`}>م{i + 1}</th>
                                     ))}
-                                    <th rowSpan="2" className="p-3 text-xs font-bold text-emerald-700 border-b min-w-[80px] bg-emerald-50">المجموع</th>
+                                    <th rowSpan="2" className="p-3 text-xs font-bold text-emerald-700 border-b border-r min-w-[80px] bg-emerald-50 cursor-pointer hover:bg-emerald-100" onClick={() => handleSort('total')}>
+                                        <div className="flex items-center justify-center gap-1">المجموع {sortConfig.key === 'total' && <Icons.SortAsc />}</div>
+                                    </th>
                                     <th rowSpan="2" className="p-3 text-xs font-bold text-purple-700 border-b min-w-[90px] bg-purple-50">المستوى</th>
                                 </tr>
                                 <tr>
@@ -592,37 +466,41 @@
                                         <th key={i} className={`p-1 border-b border-l ${score === 0 ? 'bg-slate-200' : 'bg-blue-100/50'}`}>
                                             <div className="flex flex-col items-center gap-1">
                                                 <span className={`text-[10px] ${score === 0 ? 'text-slate-400' : 'text-slate-500'}`}>من</span>
-                                                <input type="number" min="0" value={score} onChange={(e) => handleMaxScoreChange(i, e.target.value)} className={`w-10 text-center text-xs font-bold rounded px-1 py-0.5 outline-none border ${score === 0 ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-white text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-400'}`} />
+                                                <input type="number" min="0" value={score} onChange={(e) => onUpdateMaxScore(i, e.target.value)} className={`w-10 text-center text-xs font-bold rounded px-1 py-0.5 outline-none border ${score === 0 ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-white text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-400'}`} />
                                             </div>
                                         </th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {data.map((student, index) => {
+                                {displayData.map((student, index) => {
                                     const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => student[`q${i + 1}`]).reduce((a, b) => a + b, 0);
                                     const roundedTotal = Math.round(total * 100) / 100;
                                     const level = getGradeLevel(roundedTotal, totalScore);
 
                                     return (
-                                        <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
-                                            <td className="p-2 text-xs font-mono text-slate-400 border-l border-slate-100 bg-slate-50 sticky right-0 z-10">{index + 1}</td>
-                                            <td className="p-1 border-l border-slate-100 bg-white sticky right-[50px] z-10">
-                                                <input type="text" value={student.name} onChange={(e) => handleNameChange(student.id, e.target.value)} className="w-full p-1 text-sm font-medium text-slate-700 text-right focus:outline-none focus:bg-blue-50" />
+                                        <tr key={student.id} className="hover:bg-blue-50/30 transition-colors group">
+                                            <td className="p-2 text-xs font-mono text-slate-400 border-l border-slate-100 sticky-col-1">{index + 1}</td>
+                                            <td className="p-1 border-l border-slate-100 sticky-col-2">
+                                                <input type="text" value={student.name} onChange={(e) => onUpdateData(student.id, 'name', e.target.value)} className="w-full p-1 text-sm font-medium text-slate-700 text-right focus:outline-none focus:bg-blue-50 bg-transparent" />
                                             </td>
                                             {Array.from({ length: QUESTIONS_COUNT }, (_, i) => {
                                                 const isDisabled = maxScores[i] === 0;
+                                                const val = student[`q${i + 1}`];
                                                 return (
                                                     <td key={i} className={`p-1 border-l border-slate-100 ${isDisabled ? 'bg-slate-50' : ''}`}>
-                                                        <input type="text" inputMode={maxScores[i] === 1 ? "numeric" : "decimal"} disabled={isDisabled} value={student[`q${i + 1}`] === 0 ? '' : student[`q${i + 1}`]} placeholder={isDisabled ? '-' : '0'} onChange={(e) => handleScoreChange(student.id, i, e.target.value)} className={`w-full text-center p-1 rounded outline-none text-sm font-bold transition-all ${isDisabled ? 'bg-transparent text-slate-300 cursor-not-allowed' : student[`q${i + 1}`] === maxScores[i] ? 'text-green-600 bg-green-50 focus:ring-2 focus:ring-green-400' : student[`q${i + 1}`] === 0 ? 'text-slate-300 focus:ring-2 focus:ring-blue-500' : 'text-slate-700 bg-blue-50/10 focus:ring-2 focus:ring-blue-500'}`} />
+                                                        <input type="text" inputMode={maxScores[i] === 1 ? "numeric" : "decimal"} disabled={isDisabled} value={val === 0 ? '' : val} placeholder={isDisabled ? '-' : '0'} onChange={(e) => handleScoreChange(student.id, i, e.target.value)} className={`w-full text-center p-1 rounded outline-none text-sm font-bold transition-all ${isDisabled ? 'bg-transparent text-slate-300 cursor-not-allowed' : val === maxScores[i] ? 'text-green-600 bg-green-50 focus:ring-2 focus:ring-green-400' : val === 0 ? 'text-slate-300 focus:ring-2 focus:ring-blue-500' : 'text-slate-700 bg-blue-50/10 focus:ring-2 focus:ring-blue-500'}`} />
                                                     </td>
                                                 );
                                             })}
-                                            <td className={`p-2 font-bold bg-emerald-50/30 ${roundedTotal > totalScore ? 'text-red-600' : 'text-emerald-700'}`}>{roundedTotal}</td>
+                                            <td className={`p-2 font-bold bg-emerald-50/30 border-r border-slate-100 ${roundedTotal > totalScore ? 'text-red-600' : 'text-emerald-700'}`}>{roundedTotal}</td>
                                             <td className="p-2 border-r border-slate-100"><span className={`px-2 py-1 rounded text-xs font-bold ${level.color}`}>{level.label}</span></td>
                                         </tr>
                                     );
                                 })}
+                                {displayData.length === 0 && (
+                                    <tr><td colSpan={QUESTIONS_COUNT + 4} className="p-8 text-center text-slate-500">لا يوجد طلاب يطابقون البحث.</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -647,7 +525,7 @@
                                 <button onClick={() => { if(newFileName) { onSave(newFileName); setNewFileName(""); } }} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">حفظ</button>
                             </div>
                         </div>
-                        <div className="max-h-60 overflow-y-auto">
+                        <div className="max-h-60 overflow-y-auto pr-2">
                             <h4 className="text-sm font-bold text-slate-600 mb-2">الملفات المحفوظة سابقاً:</h4>
                             {savedFiles.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">لا توجد ملفات محفوظة.</p> : (
                                 <ul className="space-y-2">{savedFiles.map(file => (
@@ -666,69 +544,7 @@
             );
         };
 
-        const AnalysisDashboard = ({ data, maxScores, totalScore, examTitle, formInputs, handleFormInputChange, handleFormItemChange }) => {
-            const stats = useMemo(() => {
-                const activeStudents = data.filter((s, idx) => {
-                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
-                    const isDefaultName = s.name === `طالب ${s.id}`;
-                    return total > 0 || !isDefaultName;
-                });
-                const analysisData = activeStudents.length > 0 ? activeStudents : [];
-                const actualStudentCount = analysisData.length;
-                const studentTotals = analysisData.map(s => {
-                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
-                    return { name: s.name, total: Math.round(total * 100) / 100, level: getGradeLevel(total, totalScore) };
-                });
-                const allTotals = studentTotals.map(s => s.total);
-                const avgTotal = actualStudentCount > 0 ? parseFloat((allTotals.reduce((a, b) => a + b, 0) / actualStudentCount).toFixed(2)) : 0;
-                const minScore = actualStudentCount > 0 ? Math.min(...allTotals) : 0;
-                const maxScore = actualStudentCount > 0 ? Math.max(...allTotals) : 0;
-                const passScore = totalScore * 0.5;
-                const passCount = studentTotals.filter(s => s.total >= passScore).length;
-                const passRate = actualStudentCount > 0 ? ((passCount / actualStudentCount) * 100).toFixed(1) : 0;
-                const masteryThreshold = totalScore * 0.75;
-                const masteryCount = studentTotals.filter(s => s.total >= masteryThreshold).length;
-                const masteryRate = actualStudentCount > 0 ? ((masteryCount / actualStudentCount) * 100).toFixed(1) : 0;
-                const median = calculateMedian(allTotals);
-                const mode = calculateMode(allTotals);
-                const stdDev = calculateStdDev(allTotals, avgTotal);
-                const questionsAnalysis = Array.from({ length: QUESTIONS_COUNT }, (_, i) => {
-                    const qKey = `q${i + 1}`;
-                    const qMaxScore = maxScores[i];
-                    if (qMaxScore === 0) return { question: `م${i + 1}`, maxScore: 0, sum: 0, ease: 0, difficulty: 0, status: 'مستبعد' };
-                    const scores = analysisData.map(s => s[qKey]);
-                    const sum = scores.reduce((a, b) => a + b, 0);
-                    const easeIndex = actualStudentCount > 0 ? parseFloat((sum / (actualStudentCount * qMaxScore)).toFixed(2)) : 0;
-                    const diffIndex = parseFloat((1 - easeIndex).toFixed(2));
-                    let status = 'متوسط';
-                    if (easeIndex > 0.8) status = 'سهل جداً'; else if (easeIndex > 0.6) status = 'سهل'; else if (easeIndex < 0.25) status = 'صعب جداً'; else if (easeIndex < 0.45) status = 'صعب';
-                    return { question: `م${i + 1}`, maxScore: qMaxScore, sum: Math.round(sum * 10) / 10, ease: easeIndex, difficulty: diffIndex, status };
-                });
-                const activeQuestions = questionsAnalysis.filter(q => q.status !== 'مستبعد');
-                const weaknesses = activeQuestions.filter(q => q.ease < 0.45);
-                const strengths = activeQuestions.filter(q => q.ease > 0.75);
-                const hardestQuestions = [...activeQuestions].sort((a, b) => a.ease - b.ease);
-                const easiestQuestions = [...activeQuestions].sort((a, b) => b.ease - a.ease).slice(0, 10);
-                const levelCounts = { 'ممتاز': 0, 'جيد جداً': 0, 'جيد': 0, 'مقبول': 0, 'راسب': 0 };
-                studentTotals.forEach(s => levelCounts[s.level.label]++);
-                const levelData = Object.keys(levelCounts).map(key => ({
-                    name: key, value: levelCounts[key], color: getGradeLevel(key === 'ممتاز' ? totalScore * 0.9 : key === 'جيد جداً' ? totalScore * 0.8 : key === 'جيد' ? totalScore * 0.65 : key === 'مقبول' ? totalScore * 0.55 : 0, totalScore).chartColor
-                })).filter(item => item.value > 0);
-                const binSize = totalScore / 5;
-                const frequencyData = Array.from({ length: 5 }, (_, i) => {
-                    const rangeStart = Math.round(i * binSize);
-                    const rangeEnd = Math.round((i + 1) * binSize);
-                    const count = allTotals.filter(t => t >= rangeStart && (i === 4 ? t <= rangeEnd : t < rangeEnd)).length;
-                    return { range: `${rangeStart} - ${rangeEnd}`, count };
-                });
-                return { 
-                    studentTotals, questionsAnalysis, weaknesses, strengths,
-                    avgTotal, passRate, levelData, minScore, maxScore,
-                    median, mode, stdDev, frequencyData, hardestQuestions, easiestQuestions,
-                    actualStudentCount, masteryRate, activeQuestionsCount: activeQuestions.length 
-                };
-            }, [data, totalScore, maxScores]);
-
+        const AnalysisDashboard = ({ data, maxScores, totalScore, examTitle, formInputs, handleFormInputChange, handleFormItemChange, stats }) => {
             const generateReportText = () => {
                 let text = `## 📊 التقرير التحليلي الشامل: ${examTitle}\n\n`;
                 text += `### 1️⃣ نظرة عامة على الأداء:\n- **عدد الطلاب (الفعلي):** ${stats.actualStudentCount} طالب.\n- **عدد المفردات المحللة:** ${stats.activeQuestionsCount} مفردة.\n- **نسبة النجاح:** ${stats.passRate}%.\n- **نسبة الإتقان (75% فأكثر):** ${stats.masteryRate}%.\n- **المتوسط الحسابي:** ${stats.avgTotal} من ${totalScore}.\n`;
@@ -737,69 +553,70 @@
                 text += `- **التقدير العام للدفعة:** ${performance}.\n\n`;
                 text += `### 2️⃣ تحليل تجانس المجموعة (التشتت):\n- **المدى:** تفاوتت الدرجات بين أدنى درجة **(${stats.minScore})** وأعلى درجة **(${stats.maxScore})**.\n- **الانحراف المعياري:** (${stats.stdDev}). `;
                 const stdDevRatio = totalScore > 0 ? stats.stdDev / totalScore : 0;
-                if (stdDevRatio < 0.15) text += "وهو مؤشر منخفض، يدل على أن مستويات الطلاب **متقاربة جداً (متجانسة)**.\n"; else if (stdDevRatio > 0.25) text += "وهو مؤشر مرتفع، يدل على وجود **فجوة كبيرة** وتفاوت حاد بين مستويات الطلاب (مجموعة غير متجانسة).\n"; else text += "وهو مؤشر متوسط، يدل على تباين طبيعي في المستويات.\n";
-                text += "\n";
-                text += `### 3️⃣ معايير الحكم على المستوى:\nتم اعتماد المعايير التالية لتصنيف مستويات الطلاب بناءً على النسبة المئوية للدرجة:\n- **ممتاز:** 87.5% - 100%\n- **جيد جداً:** 75% - أقل من 87.5%\n- **جيد:** 62.5% - أقل من 75%\n- **مقبول:** 50% - أقل من 62.5%\n- **راسب:** أقل من 50%\n\n`;
-                text += `### 4️⃣ تحليل المفردات:\n`;
+                if (stdDevRatio < 0.15) text += "وهو مؤشر منخفض، يدل على أن مستويات الطلاب **متقاربة جداً (متجانسة)**.\n"; else if (stdDevRatio > 0.25) text += "وهو مؤشر مرتفع، يدل على وجود **فجوة كبيرة** وتفاوت حاد بين مستويات الطلاب (مجموعة غير متجانسة).\n"; else text += "وهو مؤشر متوسط، يدل على تباين طبيعي في المستويات.\n\n";
+                text += `### 3️⃣ تحليل المفردات:\n`;
                 const veryHard = stats.questionsAnalysis.filter(q => q.ease < 0.3 && q.status !== 'مستبعد');
-                if (veryHard.length > 0) text += `- 🔴 **مفردات شديدة الصعوبة (< 30%):** \n  (${veryHard.map(q => q.question).join('، ')}).\n`;
-                text += "\n";
-                text += `### 5️⃣ التوصيات والمقترحات:\n`;
-                if (stats.passRate < 50) text += `- ⚠️ نسبة النجاح متدنية. يجب مراجعة أساليب التدريس.\n- 📚 تنفيذ حصص تقوية إلزامية.\n`;
+                if (veryHard.length > 0) text += `- 🔴 **مفردات شديدة الصعوبة (< 30%):** \n  (${veryHard.map(q => q.question).join('، ')}).\n\n`;
+                text += `### 4️⃣ التوصيات والمقترحات:\n`;
+                if (stats.passRate < 50) text += `- ⚠️ نسبة النجاح متدنية. يجب مراجعة أساليب التدريس وتنفيذ حصص تقوية إلزامية.\n`;
                 else if (veryHard.length > 3) text += `- 📝 يوصى بإعادة شرح الدروس المتعلقة بالأسئلة الصعبة (${veryHard.slice(0,3).map(q => q.question).join('، ')}).\n`;
-                if (stdDevRatio > 0.25) text += `- 🤝 تفعيل استراتيجية "التعلم بالأقران" لتقليص الفجوة.\n`;
-                text += `- 🌟 تكريم الطلاب الحاصلين على تقدير ممتاز (${stats.levelData.find(l => l.name === 'ممتاز')?.value || 0} طلاب).\n`;
+                if (stdDevRatio > 0.25) text += `- 🤝 تفعيل استراتيجية "التعلم بالأقران" لتقليص الفجوة بين الطلاب.\n`;
+                text += `- 🌟 تكريم الطلاب الحاصلين على تقدير ممتاز.\n`;
                 return text;
             };
 
             return (
-                <div className="space-y-6 animate-fade-in pb-10 print:space-y-4">
-                    <div className="hidden print:block text-center mb-8 border-b-2 border-slate-800 pb-4">
+                <div className="space-y-6 animate-fade-in pb-10 print:space-y-4 print:pb-0">
+                    <div className="hidden print:block text-center mb-8 border-b-2 border-slate-800 pb-4 print-break-avoid">
                         <h1 className="text-3xl font-bold text-slate-900">{examTitle}</h1>
                         <p className="text-slate-600 mt-2">تقرير التحليل الإحصائي لنتائج الطلاب</p>
-                        <div className="flex justify-center gap-6 mt-4 text-sm text-slate-500"><span>عدد الطلاب (المحلل): {stats.actualStudentCount}</span><span>عدد المفردات: {stats.activeQuestionsCount}</span><span>الدرجة الكلية: {totalScore}</span><span>التاريخ: {new Date().toLocaleDateString('ar-EG')}</span></div>
+                        <div className="flex justify-center gap-6 mt-4 text-sm text-slate-800 font-bold">
+                            <span>عدد الطلاب (المحلل): {stats.actualStudentCount}</span>
+                            <span>عدد المفردات: {stats.activeQuestionsCount}</span>
+                            <span>الدرجة الكلية: {totalScore}</span>
+                            <span>التاريخ: {new Date().toLocaleDateString('ar-EG')}</span>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4 print-break-avoid">
                         <StatCard title="المتوسط الحسابي" value={stats.avgTotal} subtext={`من أصل ${totalScore}`} icon={Icons.TrendingUp} color="bg-blue-500" />
                         <StatCard title="نسبة الإتقان" value={`${stats.masteryRate}%`} subtext="الطلاب فوق 75%" icon={Icons.Star} color="bg-yellow-500" />
                         <StatCard title="المنوال (Mode)" value={stats.mode} subtext="الدرجة الأكثر تكراراً" icon={Icons.Award} color="bg-pink-500" />
                         <StatCard title="الانحراف المعياري" value={stats.stdDev} subtext="مقياس التشتت" icon={Icons.Sigma} color="bg-orange-500" />
                     </div>
 
-                    {/* NEW: Statistics Tables */}
                     <StatisticsTables stats={stats} totalScore={totalScore} />
 
-                    <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-blue-600 print:shadow-none print:border-slate-300 print:break-inside-avoid">
+                    <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-blue-600 print-break-avoid">
                         <div className="prose prose-slate max-w-none prose-p:my-1 prose-headings:mb-2 prose-headings:mt-4">
                         {generateReportText().split('\n').map((line, idx) => {
                             if (line.startsWith('## ')) return <h2 key={idx} className="text-2xl font-bold text-slate-900 pb-2 border-b">{line.replace('## ', '')}</h2>;
                             if (line.startsWith('### ')) return <h3 key={idx} className="text-lg font-bold text-blue-700 mt-4">{line.replace('### ', '')}</h3>;
-                            if (line.startsWith('- ')) return <li key={idx} className="list-disc mr-4 text-slate-700">{line.replace('- ', '')}</li>;
-                            return <p key={idx} className="text-slate-700 whitespace-pre-line">{line}</p>;
+                            if (line.startsWith('- ')) return <li key={idx} className="list-disc mr-4 text-slate-800">{line.replace('- ', '')}</li>;
+                            return <p key={idx} className="text-slate-800 whitespace-pre-line">{line}</p>;
                         })}
                         </div>
                     </div>
 
                     <ItemAnalysisForm hardestQuestions={stats.hardestQuestions} formInputs={formInputs} handleInputChange={handleFormInputChange} handleItemChange={handleFormItemChange} />
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print:break-inside-avoid">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
-                            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Icons.ArrowDown /> المفردات الأكثر صعوبة</h3></div>
-                            <div className="overflow-auto max-h-64 print:max-h-none print:overflow-visible">
-                                <table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-600"><tr><th className="p-2 border-b">الترتيب</th><th className="p-2 border-b">المفردة</th><th className="p-2 border-b">معامل السهولة</th></tr></thead><tbody>{stats.hardestQuestions.slice(0, 10).map((q, idx) => (<tr key={idx} className="border-b last:border-0"><td className="p-2 font-bold text-slate-400">{idx + 1}</td><td className="p-2 font-bold text-slate-700">{q.question}</td><td className="p-2 text-red-600 font-bold">{q.ease}</td></tr>))}{stats.hardestQuestions.length === 0 && (<tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}</tbody></table>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print-break-avoid">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 print:text-black"><Icons.ArrowDown /> المفردات الأكثر صعوبة</h3></div>
+                            <div className="overflow-auto max-h-64 print:max-h-none">
+                                <table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-600"><tr><th className="p-2 border-b print:border-gray-300">الترتيب</th><th className="p-2 border-b print:border-gray-300">المفردة</th><th className="p-2 border-b print:border-gray-300">معامل السهولة</th></tr></thead><tbody>{stats.hardestQuestions.slice(0, 10).map((q, idx) => (<tr key={idx} className="border-b last:border-0 print:border-gray-300"><td className="p-2 font-bold text-slate-400 print:text-black">{idx + 1}</td><td className="p-2 font-bold text-slate-700 print:text-black">{q.question}</td><td className="p-2 text-red-600 font-bold print:text-black">{q.ease}</td></tr>))}{stats.hardestQuestions.length === 0 && (<tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}</tbody></table>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
-                            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Icons.ArrowUp /> المفردات الأكثر سهولة</h3></div>
-                            <div className="overflow-auto max-h-64 print:max-h-none print:overflow-visible">
-                                <table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-600"><tr><th className="p-2 border-b">الترتيب</th><th className="p-2 border-b">المفردة</th><th className="p-2 border-b">معامل السهولة</th></tr></thead><tbody>{stats.easiestQuestions.map((q, idx) => (<tr key={idx} className="border-b last:border-0"><td className="p-2 font-bold text-slate-400">{idx + 1}</td><td className="p-2 font-bold text-slate-700">{q.question}</td><td className="p-2 text-green-600 font-bold">{q.ease}</td></tr>))}{stats.easiestQuestions.length === 0 && (<tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}</tbody></table>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 print:text-black"><Icons.ArrowUp /> المفردات الأكثر سهولة</h3></div>
+                            <div className="overflow-auto max-h-64 print:max-h-none">
+                                <table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-600"><tr><th className="p-2 border-b print:border-gray-300">الترتيب</th><th className="p-2 border-b print:border-gray-300">المفردة</th><th className="p-2 border-b print:border-gray-300">معامل السهولة</th></tr></thead><tbody>{stats.easiestQuestions.map((q, idx) => (<tr key={idx} className="border-b last:border-0 print:border-gray-300"><td className="p-2 font-bold text-slate-400 print:text-black">{idx + 1}</td><td className="p-2 font-bold text-slate-700 print:text-black">{q.question}</td><td className="p-2 text-green-600 font-bold print:text-black">{q.ease}</td></tr>))}{stats.easiestQuestions.length === 0 && (<tr><td colSpan="3" className="p-4 text-slate-400">لا توجد بيانات</td></tr>)}</tbody></table>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300 print:break-inside-avoid">
-                        <div className="mb-6"><h3 className="text-lg font-bold text-slate-800">الرسم البياني لمعاملات السهولة</h3></div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print-break-avoid page-break">
+                        <div className="mb-6"><h3 className="text-lg font-bold text-slate-800 print:text-black">الرسم البياني لمعاملات السهولة</h3></div>
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={stats.questionsAnalysis}>
@@ -814,9 +631,9 @@
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:break-inside-avoid">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">تكرار الدرجات (فئات)</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print-break-avoid">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 print:text-black">تكرار الدرجات (فئات)</h3>
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.frequencyData}>
@@ -831,8 +648,8 @@
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">توزيع المستويات</h3>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 print:text-black">توزيع المستويات</h3>
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -846,21 +663,11 @@
                         </div>
                     </div>
 
-                    {/* NEW: Signatures Section */}
-                    <div className="hidden print:block mt-12 pt-8 border-t border-gray-300 break-inside-avoid page-break">
+                    <div className="hidden print:block mt-8 pt-8 border-t border-gray-400 print-break-avoid">
                         <div className="flex justify-between items-center text-center text-sm font-bold">
-                            <div className="w-1/3">
-                                <p className="mb-8">معلم المادة:</p>
-                                <p>........................................</p>
-                            </div>
-                            <div className="w-1/3">
-                                <p className="mb-8">المشرف التربوي/المعلم الأول:</p>
-                                <p>........................................</p>
-                            </div>
-                            <div className="w-1/3">
-                                <p className="mb-8">مدير المدرسة:</p>
-                                <p>........................................</p>
-                            </div>
+                            <div className="w-1/3"><p className="mb-8">معلم المادة:</p><p>........................................</p></div>
+                            <div className="w-1/3"><p className="mb-8">المشرف التربوي/المعلم الأول:</p><p>........................................</p></div>
+                            <div className="w-1/3"><p className="mb-8">مدير المدرسة:</p><p>........................................</p></div>
                         </div>
                     </div>
                 </div>
@@ -872,28 +679,11 @@
             const [studentsCount, setStudentsCount] = useState(DEFAULT_STUDENTS_COUNT);
             const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
             
-            const [savedFiles, setSavedFiles] = useState(() => {
-                const files = localStorage.getItem('exam_analysis_saves');
-                return files ? JSON.parse(files) : {};
-            });
-
-            const [studentsData, setStudentsData] = useState(() => {
-                const savedData = localStorage.getItem('current_studentsData');
-                return savedData ? JSON.parse(savedData) : generateInitialData(DEFAULT_STUDENTS_COUNT);
-            });
-            const [maxScores, setMaxScores] = useState(() => {
-                const savedScores = localStorage.getItem('current_maxScores');
-                return savedScores ? JSON.parse(savedScores) : initialMaxScores;
-            });
-            const [examTitle, setExamTitle] = useState(() => {
-                return localStorage.getItem('current_examTitle') || "تحليل نتائج الاختبار";
-            });
-            const [formInputs, setFormInputs] = useState(() => {
-                const savedInputs = localStorage.getItem('current_formInputs');
-                return savedInputs ? JSON.parse(savedInputs) : {
-                    school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {}
-                };
-            });
+            const [savedFiles, setSavedFiles] = useState(() => { const files = localStorage.getItem('exam_analysis_saves'); return files ? JSON.parse(files) : {}; });
+            const [studentsData, setStudentsData] = useState(() => { const savedData = localStorage.getItem('current_studentsData'); return savedData ? JSON.parse(savedData) : generateInitialData(DEFAULT_STUDENTS_COUNT); });
+            const [maxScores, setMaxScores] = useState(() => { const savedScores = localStorage.getItem('current_maxScores'); return savedScores ? JSON.parse(savedScores) : initialMaxScores; });
+            const [examTitle, setExamTitle] = useState(() => { return localStorage.getItem('current_examTitle') || "تحليل نتائج الاختبار"; });
+            const [formInputs, setFormInputs] = useState(() => { const savedInputs = localStorage.getItem('current_formInputs'); return savedInputs ? JSON.parse(savedInputs) : { school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {} }; });
 
             useEffect(() => { localStorage.setItem('current_studentsData', JSON.stringify(studentsData)); }, [studentsData]);
             useEffect(() => { localStorage.setItem('current_maxScores', JSON.stringify(maxScores)); }, [maxScores]);
@@ -912,39 +702,61 @@
                             return student;
                         });
                         return [...prev, ...newStudents];
-                    } else {
-                        return prev.slice(0, studentsCount);
-                    }
+                    } else { return prev.slice(0, studentsCount); }
                 });
             }, [studentsCount]);
 
-            const handleSaveFile = (fileName) => {
-                const newSave = { studentsData, maxScores, examTitle, studentsCount, formInputs, timestamp: new Date().toISOString() };
-                setSavedFiles(prev => ({ ...prev, [fileName]: newSave }));
-                alert(`تم حفظ الملف باسم "${fileName}" بنجاح.`);
-                setIsFileManagerOpen(false);
-            };
-
-            const handleLoadFile = (fileName) => {
-                const file = savedFiles[fileName];
-                if (file) {
-                    setStudentsData(file.studentsData);
-                    setMaxScores(file.maxScores);
-                    setExamTitle(file.examTitle);
-                    setStudentsCount(file.studentsCount || DEFAULT_STUDENTS_COUNT);
-                    setFormInputs(file.formInputs || { school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {} });
-                    alert(`تم تحميل الملف "${fileName}".`);
-                    setIsFileManagerOpen(false);
-                }
-            };
-
-            const handleDeleteFile = (fileName) => {
-                if (confirm(`هل أنت متأكد من حذف الملف "${fileName}"؟`)) {
-                    setSavedFiles(prev => { const newFiles = { ...prev }; delete newFiles[fileName]; return newFiles; });
-                }
-            };
-
             const totalExamScore = useMemo(() => maxScores.reduce((a, b) => a + b, 0), [maxScores]);
+
+            // حساب الإحصائيات المركزية وتمريرها للمكونين
+            const stats = useMemo(() => {
+                const activeStudents = studentsData.filter((s) => {
+                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
+                    return total > 0 || s.name !== `طالب ${s.id}`;
+                });
+                const analysisData = activeStudents.length > 0 ? activeStudents : [];
+                const actualStudentCount = analysisData.length;
+                const studentTotals = analysisData.map(s => {
+                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
+                    return { name: s.name, total: Math.round(total * 100) / 100, level: getGradeLevel(total, totalExamScore) };
+                });
+                const allTotals = studentTotals.map(s => s.total);
+                const avgTotal = actualStudentCount > 0 ? parseFloat((allTotals.reduce((a, b) => a + b, 0) / actualStudentCount).toFixed(2)) : 0;
+                const minScore = actualStudentCount > 0 ? Math.min(...allTotals) : 0;
+                const maxScore = actualStudentCount > 0 ? Math.max(...allTotals) : 0;
+                const passCount = studentTotals.filter(s => s.total >= (totalExamScore * 0.5)).length;
+                const passRate = actualStudentCount > 0 ? ((passCount / actualStudentCount) * 100).toFixed(1) : 0;
+                const masteryCount = studentTotals.filter(s => s.total >= (totalExamScore * 0.75)).length;
+                const masteryRate = actualStudentCount > 0 ? ((masteryCount / actualStudentCount) * 100).toFixed(1) : 0;
+                
+                const questionsAnalysis = Array.from({ length: QUESTIONS_COUNT }, (_, i) => {
+                    const qKey = `q${i + 1}`;
+                    const qMaxScore = maxScores[i];
+                    if (qMaxScore === 0) return { question: `م${i + 1}`, maxScore: 0, sum: 0, ease: 0, difficulty: 0, status: 'مستبعد' };
+                    const sum = analysisData.map(s => s[qKey]).reduce((a, b) => a + b, 0);
+                    const easeIndex = actualStudentCount > 0 ? parseFloat((sum / (actualStudentCount * qMaxScore)).toFixed(2)) : 0;
+                    return { question: `م${i + 1}`, maxScore: qMaxScore, sum: Math.round(sum * 10) / 10, ease: easeIndex, difficulty: parseFloat((1 - easeIndex).toFixed(2)), status: easeIndex > 0.8 ? 'سهل جداً' : easeIndex > 0.6 ? 'سهل' : easeIndex < 0.25 ? 'صعب جداً' : easeIndex < 0.45 ? 'صعب' : 'متوسط' };
+                });
+                
+                const activeQuestions = questionsAnalysis.filter(q => q.status !== 'مستبعد');
+                const levelCounts = { 'ممتاز': 0, 'جيد جداً': 0, 'جيد': 0, 'مقبول': 0, 'راسب': 0 };
+                studentTotals.forEach(s => levelCounts[s.level.label]++);
+
+                return {
+                    avgTotal, passRate, masteryRate, minScore, maxScore, actualStudentCount, activeQuestionsCount: activeQuestions.length,
+                    median: calculateMedian(allTotals), mode: calculateMode(allTotals), stdDev: calculateStdDev(allTotals, avgTotal),
+                    hardestQuestions: [...activeQuestions].sort((a, b) => a.ease - b.ease),
+                    easiestQuestions: [...activeQuestions].sort((a, b) => b.ease - a.ease).slice(0, 10),
+                    questionsAnalysis,
+                    levelData: Object.keys(levelCounts).map(key => ({ name: key, value: levelCounts[key], color: getGradeLevel(key === 'ممتاز' ? totalExamScore * 0.9 : key === 'جيد جداً' ? totalExamScore * 0.8 : key === 'جيد' ? totalExamScore * 0.65 : key === 'مقبول' ? totalExamScore * 0.55 : 0, totalExamScore).chartColor })).filter(item => item.value > 0),
+                    frequencyData: Array.from({ length: 5 }, (_, i) => {
+                        const binSize = totalExamScore / 5;
+                        const start = Math.round(i * binSize), end = Math.round((i + 1) * binSize);
+                        return { range: `${start} - ${end}`, count: allTotals.filter(t => t >= start && (i === 4 ? t <= end : t < end)).length };
+                    })
+                };
+            }, [studentsData, totalExamScore, maxScores]);
+
 
             const handleTotalScoreChange = (newTotal) => {
                 const total = parseInt(newTotal);
@@ -955,78 +767,51 @@
                 setStudentsData(prev => prev.map(student => {
                     const newStudent = { ...student };
                     for (let i = 1; i <= QUESTIONS_COUNT; i++) {
-                        const qMax = newMaxScores[i-1];
-                        if (newStudent[`q${i}`] > qMax) newStudent[`q${i}`] = qMax;
+                        if (newStudent[`q${i}`] > newMaxScores[i-1]) newStudent[`q${i}`] = newMaxScores[i-1];
                     }
                     return newStudent;
                 }));
             };
 
-            const handleUpdateData = (id, key, value) => {
-                setStudentsData(prev => prev.map(s => s.id === id ? { ...s, [key]: value } : s));
+            const handleExportCSV = () => {
+                let csvContent = "\uFEFF"; 
+                
+                let headers = ["الرقم", "اسم الطالب"];
+                maxScores.forEach((score, i) => { if(score > 0) headers.push(`م${i+1}`); });
+                headers.push("المجموع", "المستوى");
+                csvContent += headers.join(",") + "\n";
+
+                studentsData.forEach((student, index) => {
+                    let total = 0;
+                    let row = [index + 1, student.name];
+                    maxScores.forEach((score, i) => {
+                        if(score > 0) {
+                            row.push(student[`q${i+1}`]);
+                            total += student[`q${i+1}`];
+                        }
+                    });
+                    row.push(Math.round(total * 100) / 100);
+                    row.push(getGradeLevel(total, totalExamScore).label);
+                    csvContent += row.join(",") + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `${examTitle} - تصدير الدرجات.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             };
 
-            const handleUpdateMaxScore = (index, value) => {
-                const newMaxScores = [...maxScores];
-                newMaxScores[index] = value;
-                setMaxScores(newMaxScores);
-                const qKey = `q${index + 1}`;
-                if (value === 0) {
-                    setStudentsData(prev => prev.map(student => ({ ...student, [qKey]: 0 })));
-                } else {
-                    setStudentsData(prev => prev.map(student => {
-                        return student[qKey] > value ? { ...student, [qKey]: value } : student;
-                    }));
-                }
-            };
-
-            const handleResetData = () => {
-                if (window.confirm("هل أنت متأكد من تصفير جميع درجات الطلاب؟")) {
-                    setStudentsData(prev => prev.map(s => {
-                        const newS = { ...s };
-                        for (let i = 1; i <= QUESTIONS_COUNT; i++) { newS[`q${i}`] = 0; }
-                        return newS;
-                    }));
-                }
-            };
-
-            const handleRandomize = () => {
-                setStudentsData(prev => prev.map(s => {
-                    const newS = { ...s };
-                    const studentPerformance = Math.random(); 
-                    for (let i = 1; i <= QUESTIONS_COUNT; i++) {
-                        const qMax = maxScores[i - 1];
-                        if (qMax === 0) { newS[`q${i}`] = 0; continue; }
-                        const scoreRatio = (studentPerformance * 0.7) + (Math.random() * 0.3);
-                        let score = Math.round(scoreRatio * qMax);
-                        score = Math.min(score, qMax); 
-                        newS[`q${i}`] = score;
-                    }
-                    return newS;
-                }));
-            };
-
-            const handleFormInputChange = (e, field) => {
-                setFormInputs(prev => ({ ...prev, [field]: e.target.value }));
-            };
-
-            const handleFormItemChange = (questionKey, field, value) => {
-                setFormInputs(prev => ({
-                    ...prev,
-                    items: { ...prev.items, [questionKey]: { ...(prev.items[questionKey] || {}), [field]: value } }
-                }));
-            };
-
-            const handleExport = () => {
+            const handleExportJSON = () => {
                 const dataStr = JSON.stringify({ studentsData, maxScores, examTitle, studentsCount, formInputs });
                 const blob = new Blob([dataStr], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = url;
-                link.download = `exam-analysis-backup-${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                link.href = url; link.download = `exam-analysis-backup-${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
             };
 
             const handleImport = (file) => {
@@ -1035,78 +820,76 @@
                     try {
                         const importedData = JSON.parse(event.target.result);
                         if (importedData.studentsData && importedData.maxScores) {
-                            setStudentsData(importedData.studentsData);
-                            setMaxScores(importedData.maxScores);
+                            setStudentsData(importedData.studentsData); setMaxScores(importedData.maxScores);
                             if (importedData.examTitle) setExamTitle(importedData.examTitle);
                             if (importedData.studentsCount) setStudentsCount(importedData.studentsCount);
                             if (importedData.formInputs) setFormInputs(importedData.formInputs);
                             alert("تم استعادة البيانات بنجاح!");
                         } else { alert("الملف غير صالح."); }
-                    } catch (error) { console.error(error); alert("حدث خطأ أثناء قراءة الملف."); }
+                    } catch (error) { alert("حدث خطأ أثناء قراءة الملف."); }
                 };
                 reader.readAsText(file);
             };
 
-            const handlePrint = () => window.print();
+            const handleSaveFile = (fileName) => { setSavedFiles(prev => ({ ...prev, [fileName]: { studentsData, maxScores, examTitle, studentsCount, formInputs } })); alert(`تم حفظ "${fileName}" بنجاح.`); setIsFileManagerOpen(false); };
+            const handleLoadFile = (fileName) => { const f = savedFiles[fileName]; if (f) { setStudentsData(f.studentsData); setMaxScores(f.maxScores); setExamTitle(f.examTitle); setStudentsCount(f.studentsCount || DEFAULT_STUDENTS_COUNT); setFormInputs(f.formInputs || { school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {} }); alert(`تم تحميل "${fileName}".`); setIsFileManagerOpen(false); } };
+            const handleDeleteFile = (fileName) => { if (confirm(`حذف "${fileName}"؟`)) setSavedFiles(prev => { const n = { ...prev }; delete n[fileName]; return n; }); };
+            const handleUpdateData = (id, key, value) => setStudentsData(prev => prev.map(s => s.id === id ? { ...s, [key]: value } : s));
+            const handleUpdateMaxScore = (idx, value) => { const n = [...maxScores]; n[idx] = Math.max(0, parseFloat(value) || 0); setMaxScores(n); const qKey = `q${idx + 1}`; setStudentsData(prev => prev.map(s => s[qKey] > n[idx] ? { ...s, [qKey]: n[idx] } : s)); };
+            const handleResetData = () => { if (window.confirm("متأكد من تصفير الدرجات؟")) setStudentsData(prev => prev.map(s => { const n = { ...s }; for (let i = 1; i <= QUESTIONS_COUNT; i++) n[`q${i}`] = 0; return n; })); };
+            const handleRandomize = () => setStudentsData(prev => prev.map(s => { const n = { ...s }; const p = Math.random(); for (let i = 1; i <= QUESTIONS_COUNT; i++) { if (maxScores[i-1] === 0) { n[`q${i}`] = 0; continue; } n[`q${i}`] = Math.min(Math.round(((p * 0.7) + (Math.random() * 0.3)) * maxScores[i-1]), maxScores[i-1]); } return n; }));
 
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-right" dir="rtl">
-                    <header className="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-30 no-print">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                    <header className="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-40 no-print">
+                        <div className="max-w-[95%] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-3 w-full md:w-auto">
                                 <div className="bg-blue-600 p-2 rounded-lg"><Icons.Calculator /></div>
-                                <div><h1 className="text-xl font-bold">نظام تحليل الاختبارات</h1><p className="text-xs text-slate-400">تحليل شامل</p></div>
+                                <div><h1 className="text-xl font-bold">نظام تحليل الاختبارات</h1><p className="text-xs text-slate-400">إصدار مطور | أ.عبدالله الرواحي</p></div>
                             </div>
-                            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+                            <div className="flex flex-wrap items-center gap-4 justify-end">
                                 <div className="flex items-center gap-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                                    <span className="text-xs text-slate-400 whitespace-nowrap pl-2">اختر الدرجة الكلية:</span>
-                                    <select onChange={(e) => handleTotalScoreChange(e.target.value)} className="bg-slate-900 text-white text-sm font-bold rounded p-1 outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer" defaultValue="">
-                                        <option value="" disabled>-- اختر --</option><option value="60">60 درجة (60 مفردة)</option><option value="40">40 درجة (40 مفردة)</option><option value="30">30 درجة (30 مفردة)</option><option value="20">20 درجة (20 مفردة)</option><option value="15">15 درجة (15 مفردة)</option><option value="10">10 درجات (10 مفردات)</option>
+                                    <span className="text-xs text-slate-400 pl-2">الدرجة الكلية:</span>
+                                    <select onChange={(e) => handleTotalScoreChange(e.target.value)} className="bg-slate-900 text-white text-sm font-bold rounded p-1 outline-none cursor-pointer" defaultValue="">
+                                        <option value="" disabled>تخصيص سريع...</option><option value="60">60 درجة</option><option value="40">40 درجة</option><option value="30">30 درجة</option><option value="20">20 درجة</option><option value="10">10 درجات</option>
                                     </select>
                                 </div>
                                 <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
                                     <span className="text-xs text-slate-400">المجموع الحالي:</span><span className="font-bold text-white text-lg">{totalExamScore}</span>
                                 </div>
                                 <div className="flex bg-slate-800 p-1 rounded-lg">
-                                    <button onClick={() => setActiveTab('entry')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'entry' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Icons.Table /><span className="hidden sm:inline">إدخال الدرجات</span></button>
-                                    <button onClick={() => setActiveTab('analysis')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Icons.FileText /><span className="hidden sm:inline">التقرير</span></button>
+                                    <button onClick={() => setActiveTab('entry')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'entry' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Icons.Table /> إدخال</button>
+                                    <button onClick={() => setActiveTab('analysis')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Icons.FileText /> تقرير</button>
                                 </div>
-                                {activeTab === 'analysis' && (
-                                    <button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors" title="طباعة التقرير"><Icons.Printer /><span className="hidden md:inline">طباعة</span></button>
-                                )}
+                                {activeTab === 'analysis' && <button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg flex items-center gap-2"><Icons.Printer /> طباعة</button>}
                             </div>
                         </div>
                     </header>
 
-                    <main className="max-w-7xl mx-auto p-4 md:p-6 print:p-0 print:max-w-none">
+                    <main className="max-w-[95%] mx-auto p-4 md:p-6 print:p-0 print:max-w-none">
                         {activeTab === 'entry' ? (
                             <DataEntryView 
                                 data={studentsData} maxScores={maxScores} onUpdateData={handleUpdateData} onUpdateMaxScore={handleUpdateMaxScore} 
                                 onRandomize={handleRandomize} onReset={handleResetData} totalScore={totalExamScore} examTitle={examTitle} 
                                 setExamTitle={setExamTitle} studentCount={studentsCount} onStudentCountChange={setStudentsCount} 
-                                onExport={handleExport} onImport={handleImport} onOpenFileManager={() => setIsFileManagerOpen(true)}
+                                onExportJSON={handleExportJSON} onExportCSV={handleExportCSV} onImport={handleImport} 
+                                onOpenFileManager={() => setIsFileManagerOpen(true)} stats={stats}
                             />
                         ) : (
                             <AnalysisDashboard 
                                 data={studentsData} maxScores={maxScores} totalScore={totalExamScore} examTitle={examTitle} 
-                                formInputs={formInputs} handleFormInputChange={handleFormInputChange} handleFormItemChange={handleFormItemChange}
+                                formInputs={formInputs} handleFormInputChange={(e, f) => setFormInputs(p => ({...p, [f]: e.target.value}))} 
+                                handleFormItemChange={(q, f, v) => setFormInputs(p => ({...p, items: {...p.items, [q]: {...(p.items[q]||{}), [f]: v}}}))} stats={stats}
                             />
                         )}
                     </main>
 
-                    <FileManagerModal 
-                        isOpen={isFileManagerOpen} onClose={() => setIsFileManagerOpen(false)} savedFiles={Object.keys(savedFiles)} 
-                        onSave={handleSaveFile} onLoad={handleLoadFile} onDelete={handleDeleteFile}
-                    />
+                    <FileManagerModal isOpen={isFileManagerOpen} onClose={() => setIsFileManagerOpen(false)} savedFiles={Object.keys(savedFiles)} onSave={handleSaveFile} onLoad={handleLoadFile} onDelete={handleDeleteFile} />
 
                     <footer className="bg-slate-900 border-t border-slate-800 p-4 mt-auto no-print">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-                            <div className="text-slate-400 flex flex-col md:flex-row items-center gap-2 text-center md:text-right">
-                                <span>تصميم وتطوير:</span><span className="font-bold text-white">أ.عبدالله بن خلف الرواحي</span>
-                                <span className="hidden md:inline text-slate-600">|</span>
-                                <span>بالتعاون مع المشرف الأول:</span><span className="font-bold text-white">أ. ناصر بن علي العبري</span>
-                            </div>
-                            <div className="text-slate-500 text-xs">جميع الحقوق محفوظة © {new Date().getFullYear()}</div>
+                        <div className="max-w-[95%] mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
+                            <div><span>تصميم وتطوير: </span><span className="font-bold text-white">أ.عبدالله بن خلف الرواحي</span> <span className="mx-2">|</span> <span>بإشراف: </span><span className="font-bold text-white">أ. ناصر العبري</span></div>
+                            <div className="text-xs">جميع الحقوق محفوظة © {new Date().getFullYear()}</div>
                         </div>
                     </footer>
                 </div>
