@@ -708,7 +708,13 @@
             const totalExamScore = useMemo(() => maxScores.reduce((a, b) => a + b, 0), [maxScores]);
 
             const stats = useMemo(() => {
-                const analysisData = studentsData;
+                // الفلترة الذكية: أخذ الطلاب الذين تم إدخال درجات لهم أو تم تعديل أسمائهم فقط
+                const analysisData = studentsData.filter(s => {
+                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
+                    const isNameChanged = s.name.trim() !== `طالب ${s.id}` && s.name.trim() !== '';
+                    return total > 0 || isNameChanged;
+                });
+                
                 const actualStudentCount = analysisData.length;
                 
                 const studentTotals = analysisData.map(s => {
@@ -774,7 +780,14 @@
                 headers.push("المجموع", "المستوى");
                 csvContent += headers.join(",") + "\n";
 
-                studentsData.forEach((student, index) => {
+                // استثناء الصفوف الفارغة عند التصدير لملف الإكسل
+                const activeStudentsForExport = studentsData.filter(s => {
+                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
+                    const isNameChanged = s.name.trim() !== `طالب ${s.id}` && s.name.trim() !== '';
+                    return total > 0 || isNameChanged;
+                });
+
+                activeStudentsForExport.forEach((student, index) => {
                     let total = 0;
                     let row = [index + 1, student.name];
                     maxScores.forEach((score, i) => {
