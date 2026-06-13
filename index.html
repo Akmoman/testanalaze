@@ -232,7 +232,6 @@
         const RenderField = ({ qKey, field, options, placeholder, value, onChange }) => {
             const textareaRef = useRef(null);
 
-            // تمديد الحقل تلقائياً بناءً على النص (في الشاشة)
             const resizeTextarea = () => {
                 if (textareaRef.current) {
                     textareaRef.current.style.height = 'auto';
@@ -254,14 +253,12 @@
                         <option value="" disabled>تعبئة سريعة...</option>
                         {options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
-                    {/* هذا المربع يظهر في الشاشة فقط للتحرير */}
                     <textarea 
                         ref={textareaRef}
                         className="w-full min-h-[60px] p-1 resize-none focus:outline-none focus:bg-blue-50 bg-transparent text-sm overflow-hidden print:hidden"
                         placeholder={placeholder} value={value || ''}
                         onChange={(e) => onChange(qKey, field, e.target.value)}
                     />
-                    {/* هذا العنصر يظهر في الطباعة فقط لضمان ظهور النص كاملاً كفقرة */}
                     <div className="hidden print:block w-full text-sm whitespace-pre-wrap break-words text-right p-1 min-h-[60px]">
                         {value || ''}
                     </div>
@@ -285,7 +282,6 @@
                     </div>
 
                     <div className="w-full">
-                        {/* استخدام table-fixed لمنع تجاوز الجدول للصفحة */}
                         <table className="w-full border-collapse border border-slate-300 print:border-black text-sm text-center print:table-fixed">
                             <thead className="bg-slate-50 print:bg-gray-100 text-slate-800 font-bold">
                                 <tr>
@@ -387,7 +383,6 @@
 
             const displayData = useMemo(() => {
                 let filteredData = data.filter(student => student.name.includes(searchTerm));
-                
                 if (sortConfig.key) {
                     filteredData.sort((a, b) => {
                         let aVal, bVal;
@@ -397,7 +392,6 @@
                             aVal = Array.from({ length: QUESTIONS_COUNT }, (_, i) => a[`q${i + 1}`]).reduce((sum, val) => sum + val, 0);
                             bVal = Array.from({ length: QUESTIONS_COUNT }, (_, i) => b[`q${i + 1}`]).reduce((sum, val) => sum + val, 0);
                         }
-                        
                         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
                         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
                         return 0;
@@ -603,7 +597,6 @@
 
                     <ItemAnalysisForm hardestQuestions={stats.hardestQuestions} formInputs={formInputs} handleInputChange={handleFormInputChange} handleItemChange={handleFormItemChange} />
 
-                    {/* المفردات الأكثر صعوبة وسهولة (ترتيب عمودي في الطباعة لمنع التداخل) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1 print-break-avoid">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 chart-box">
                             <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 print:text-black"><Icons.ArrowDown /> المفردات الأكثر صعوبة</h3></div>
@@ -635,7 +628,6 @@
                         </div>
                     </div>
                     
-                    {/* الرسوم البيانية الأخرى (تم جعلها عمودية في الطباعة لمنع القص) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1 print-break-avoid">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 chart-box">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 print:text-black">تكرار الدرجات (فئات)</h3>
@@ -658,7 +650,6 @@
                             <div className="h-72 print:h-80">
                                 <ResponsiveContainer width="100%" height="100%">
                                 <PieChart margin={{ top: 10, right: 0, left: 0, bottom: 20 }}>
-                                    {/* تصغير outerRadius إلى 80 ورفع cx للوسط لتجنب القص */}
                                     <Pie data={stats.levelData} cx="50%" cy="45%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                                     {stats.levelData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
                                     </Pie>
@@ -669,7 +660,6 @@
                         </div>
                     </div>
 
-                    {/* NEW: Signatures Section */}
                     <div className="hidden print:block mt-8 pt-8 border-t border-gray-400 print-break-avoid">
                         <div className="flex justify-between items-center text-center text-sm font-bold">
                             <div className="w-1/3"><p className="mb-8">معلم المادة:</p><p>........................................</p></div>
@@ -709,19 +699,18 @@
                             return student;
                         });
                         return [...prev, ...newStudents];
-                    } else { return prev.slice(0, studentsCount); }
+                    } else {
+                        return prev.slice(0, studentsCount);
+                    }
                 });
             }, [studentsCount]);
 
             const totalExamScore = useMemo(() => maxScores.reduce((a, b) => a + b, 0), [maxScores]);
 
             const stats = useMemo(() => {
-                const activeStudents = studentsData.filter((s) => {
-                    const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
-                    return total > 0 || s.name !== `طالب ${s.id}`;
-                });
-                const analysisData = activeStudents.length > 0 ? activeStudents : [];
+                const analysisData = studentsData;
                 const actualStudentCount = analysisData.length;
+                
                 const studentTotals = analysisData.map(s => {
                     const total = Array.from({ length: QUESTIONS_COUNT }, (_, i) => s[`q${i + 1}`]).reduce((a, b) => a + b, 0);
                     return { name: s.name, total: Math.round(total * 100) / 100, level: getGradeLevel(total, totalExamScore) };
@@ -763,7 +752,6 @@
                 };
             }, [studentsData, totalExamScore, maxScores]);
 
-
             const handleTotalScoreChange = (newTotal) => {
                 const total = parseInt(newTotal);
                 if (isNaN(total)) return;
@@ -781,7 +769,6 @@
 
             const handleExportCSV = () => {
                 let csvContent = "\uFEFF"; 
-                
                 let headers = ["الرقم", "اسم الطالب"];
                 maxScores.forEach((score, i) => { if(score > 0) headers.push(`م${i+1}`); });
                 headers.push("المجموع", "المستوى");
@@ -840,10 +827,16 @@
             const handleSaveFile = (fileName) => { setSavedFiles(prev => ({ ...prev, [fileName]: { studentsData, maxScores, examTitle, studentsCount, formInputs } })); alert(`تم حفظ "${fileName}" بنجاح.`); setIsFileManagerOpen(false); };
             const handleLoadFile = (fileName) => { const f = savedFiles[fileName]; if (f) { setStudentsData(f.studentsData); setMaxScores(f.maxScores); setExamTitle(f.examTitle); setStudentsCount(f.studentsCount || DEFAULT_STUDENTS_COUNT); setFormInputs(f.formInputs || { school: '', subject: '', grade: '', date: new Date().toLocaleDateString('ar-EG'), items: {} }); alert(`تم تحميل "${fileName}".`); setIsFileManagerOpen(false); } };
             const handleDeleteFile = (fileName) => { if (confirm(`حذف "${fileName}"؟`)) setSavedFiles(prev => { const n = { ...prev }; delete n[fileName]; return n; }); };
+            
             const handleUpdateData = (id, key, value) => setStudentsData(prev => prev.map(s => s.id === id ? { ...s, [key]: value } : s));
             const handleUpdateMaxScore = (idx, value) => { const n = [...maxScores]; n[idx] = Math.max(0, parseFloat(value) || 0); setMaxScores(n); const qKey = `q${idx + 1}`; setStudentsData(prev => prev.map(s => s[qKey] > n[idx] ? { ...s, [qKey]: n[idx] } : s)); };
             const handleResetData = () => { if (window.confirm("متأكد من تصفير الدرجات؟")) setStudentsData(prev => prev.map(s => { const n = { ...s }; for (let i = 1; i <= QUESTIONS_COUNT; i++) n[`q${i}`] = 0; return n; })); };
             const handleRandomize = () => setStudentsData(prev => prev.map(s => { const n = { ...s }; const p = Math.random(); for (let i = 1; i <= QUESTIONS_COUNT; i++) { if (maxScores[i-1] === 0) { n[`q${i}`] = 0; continue; } n[`q${i}`] = Math.min(Math.round(((p * 0.7) + (Math.random() * 0.3)) * maxScores[i-1]), maxScores[i-1]); } return n; }));
+
+            const handleFormInputChange = (e, field) => setFormInputs(prev => ({ ...prev, [field]: e.target.value }));
+            const handleFormItemChange = (questionKey, field, value) => setFormInputs(prev => ({ ...prev, items: { ...prev.items, [questionKey]: { ...(prev.items[questionKey] || {}), [field]: value } } }));
+
+            const handlePrint = () => window.print();
 
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-right" dir="rtl">
@@ -867,7 +860,7 @@
                                     <button onClick={() => setActiveTab('entry')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'entry' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Icons.Table /> إدخال</button>
                                     <button onClick={() => setActiveTab('analysis')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Icons.FileText /> تقرير</button>
                                 </div>
-                                {activeTab === 'analysis' && <button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg flex items-center gap-2"><Icons.Printer /> طباعة</button>}
+                                {activeTab === 'analysis' && <button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg flex items-center gap-2"><Icons.Printer /> طباعة</button>}
                             </div>
                         </div>
                     </header>
@@ -884,8 +877,7 @@
                         ) : (
                             <AnalysisDashboard 
                                 data={studentsData} maxScores={maxScores} totalScore={totalExamScore} examTitle={examTitle} 
-                                formInputs={formInputs} handleFormInputChange={(e, f) => setFormInputs(p => ({...p, [f]: e.target.value}))} 
-                                handleFormItemChange={(q, f, v) => setFormInputs(p => ({...p, items: {...p.items, [q]: {...(p.items[q]||{}), [f]: v}}}))} stats={stats}
+                                formInputs={formInputs} handleFormInputChange={handleFormInputChange} handleFormItemChange={handleFormItemChange} stats={stats}
                             />
                         )}
                     </main>
